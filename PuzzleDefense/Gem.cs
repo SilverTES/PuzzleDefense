@@ -126,16 +126,22 @@ namespace PuzzleDefense
         {
             if (indexLayer == (int)Game1.Layers.Main) 
             {
-                batch.FilledCircle(Game1._texCircle, AbsXY, Radius, Color * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 8, Color * .75f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, Radius, Color * .25f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 8, Color * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 16, Color * .75f);
                 
                 if (IsSelected)
                 {
-                    //batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 20, Color.White * 1f);
-                    batch.Circle(AbsXY, Radius/2, 24, Color.White * 1f, 3f);
+                    //batch.FilledCircle(Game1._texCircle, AbsXY, Radius + 8, Color.White * 1f);
+                    //batch.Circle(AbsXY, Radius/2 + 4, 24, Color.White * 1f, 3f);
                 }
 
             }
+            if (indexLayer == (int)Game1.Layers.BackFX)
+            {
+
+            }
+
             if (indexLayer == (int)Game1.Layers.Debug)
             {
 

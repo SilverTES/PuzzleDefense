@@ -41,6 +41,8 @@ namespace PuzzleDefense
         public Gem CurGemOver;
         public Gem CurGemToSwap;
 
+        private List<Vector2> _matchedGems; // Liste des positions des gemmes matchées
+
         GamePadState _pad;
         KeyboardState _key;
 
@@ -172,7 +174,7 @@ namespace PuzzleDefense
                     var gemRight2 = GetGem(new Point(x + 2, y));
 
                     if (gem != null && gemRight1 != null && gemRight2 != null)
-                        if (gem == gemRight1 && gem == gemRight2)
+                        if (gem.Color == gemRight1.Color && gem.Color == gemRight2.Color)
                             return true;
                 }
             }
@@ -186,13 +188,59 @@ namespace PuzzleDefense
                     var gemDown1 = GetGem(new Point(x, y + 1));
                     var gemDown2 = GetGem(new Point(x, y + 2));
 
-                    if (gem == gemDown1 && gem == gemDown2)
+                    if (gem.Color == gemDown1.Color && gem.Color == gemDown2.Color)
                         return true;
                 }
             }
 
             return false;
         }
+        // Trouver tous les match-3 (ou plus)
+        //private void FindMatches()
+        //{
+        //    _matchedGems.Clear(); // Réinitialiser la liste des matchs
+
+        //    // Vérifier horizontalement
+        //    for (int y = 0; y < _grid.Height; y++)
+        //    {
+        //        for (int x = 0; x < _grid.Width - 2; x++)
+        //        {
+        //            var color = _grid[x, y];
+        //            if (color != 0 && x + 2 < _gridWidth && _grid[x + 1, y] == color && _grid[x + 2, y] == color)
+        //            {
+        //                // Ajouter toutes les gemmes du match à la liste
+        //                int matchLength = 3;
+        //                while (x + matchLength < _gridWidth && _grid[x + matchLength, y] == color)
+        //                    matchLength++;
+
+        //                for (int i = 0; i < matchLength; i++)
+        //                    _matchedGems.Add(new Vector2(x + i, y));
+
+        //                x += matchLength - 1; // Sauter les gemmes déjà matchées
+        //            }
+        //        }
+        //    }
+
+        //    // Vérifier verticalement
+        //    for (int x = 0; x < _gridWidth; x++)
+        //    {
+        //        for (int y = 0; y < _gridHeight - 2; y++)
+        //        {
+        //            int color = _grid[x, y];
+        //            if (color != 0 && y + 2 < _gridHeight && _grid[x, y + 1] == color && _grid[x, y + 2] == color)
+        //            {
+        //                int matchLength = 3;
+        //                while (y + matchLength < _gridHeight && _grid[x, y + matchLength] == color)
+        //                    matchLength++;
+
+        //                for (int i = 0; i < matchLength; i++)
+        //                    _matchedGems.Add(new Vector2(x, y + i));
+
+        //                y += matchLength - 1;
+        //            }
+        //        }
+        //    }
+        //}
         public Vector2 MapPositionToVector2(Point mapPosition)
         {
             return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;
@@ -224,6 +272,10 @@ namespace PuzzleDefense
             _stick.X = _pad.ThumbSticks.Left.X * 10;
             _stick.Y = _pad.ThumbSticks.Left.Y * -10;
 
+        }
+        public bool IsStickMove()
+        {
+            return Math.Abs(_stick.X) > 0 || Math.Abs(_stick.Y) > 0;
         }
         public bool SwapGem(Gem gemA, Gem gemB)
         {
@@ -272,8 +324,7 @@ namespace PuzzleDefense
 
                 case States.SwapGems:
 
-                    _cursorPos.X = CurGemOver._x + _offSetGem.X;
-                    _cursorPos.Y = CurGemOver._y + _offSetGem.Y;
+                    _cursorPos = CurGemOver.XY + _offSetGem;
 
                     if (CurGemOver.GetState() == (int)Gem.States.None &&
                         CurGemToSwap.GetState() == (int)Gem.States.None)
@@ -332,6 +383,20 @@ namespace PuzzleDefense
                 ChangeState((int)States.SelectGemToSwap);
             }
 
+            // Si le stick ne bouge pas alors on attire le curseur sur le CurGemOver
+            if (!IsStickMove())
+            {
+                _offSetGem /= 1.5f;
+
+                if (CurGemOver != null)
+                    _cursorPos = CurGemOver.XY + _offSetGem;
+            }
+            else
+            {
+                if (CurGemOver != null)
+                    _offSetGem = _cursorPos - CurGemOver.XY;
+            }
+
 
         }
         public override Node Update(GameTime gameTime)
@@ -350,6 +415,9 @@ namespace PuzzleDefense
             if (indexLayer == (int)Game1.Layers.Main)
             {
                 batch.FillRectangle(AbsRect, Color.Black * .5f);
+
+                batch.FillRectangle(_rectCursor.Translate(AbsXY), Color.Black * .5f);
+                
                 batch.Grid(AbsXY, _rect.Width, _rect.Height, CellSize.X, CellSize.Y, Color.Black * .5f, 3f);
                 batch.Rectangle(AbsRectF.Extend(10f), Color.RoyalBlue * 1f, 3f);
 
@@ -357,18 +425,20 @@ namespace PuzzleDefense
 
             }
 
+            if (indexLayer == (int)Game1.Layers.BackFX)
+            {
+            }
             if (indexLayer == (int)Game1.Layers.HUD)
             {
-                batch.FillRectangle(_rectCursor.Translate(AbsXY), Color.White * .25f);
                 //batch.BevelledRectangle(_rectCursor.Translate(AbsXY), Vector2.One * 8, Color.White * .25f, 4f);
                 //batch.FilledCircle(Game1._texCircle, AbsXY + _cursorPos, 16, Color.White * .5f);
 
-                batch.Draw(Game1._texCursorA,new Rectangle((AbsXY + _cursorPos - Vector2.One * 10).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2()/ 3).ToPoint()), Color.White);
+                batch.Draw(Game1._texCursorA,new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2()/ 2).ToPoint()), Color.White);
             }
             if (indexLayer == (int)Game1.Layers.Debug) 
             {
                 batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_swapDirection}", AbsRectF.TopCenter, Color.Yellow);
-                batch.CenterStringXY(Game1._fontMain, $"{(States)_state}", AbsRectF.BottomCenter, Color.White);
+                batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {HasMatch3()}", AbsRectF.BottomCenter, Color.White);
 
                 //if (CurGemOver != null)
                 //    batch.Line(CurGemOver.AbsXY, CurGemOver.AbsXY + _stick * 5, Color.White, 8);
