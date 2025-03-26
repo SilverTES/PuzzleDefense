@@ -27,6 +27,8 @@ namespace PuzzleDefense
         public static Texture2D _texBG00;
         public static Texture2D _texLine;
         public static Texture2D _texCircle;
+        public static Texture2D _texCursorA;
+
 
         public static SpriteFont _fontMain;
 
@@ -58,6 +60,7 @@ namespace PuzzleDefense
         protected override void LoadContent()
         {
             _texBG00 = Content.Load<Texture2D>("Images/background00");
+            _texCursorA = Content.Load<Texture2D>("Images/CursorA");
 
             _fontMain = Content.Load<SpriteFont>("Fonts/fontMain");
         }

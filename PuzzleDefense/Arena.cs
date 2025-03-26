@@ -37,6 +37,7 @@ namespace PuzzleDefense
         Vector2 _stick;
         Point _swapDirection = new Point();
 
+        Vector2 _offSetGem;
         public Gem CurGemOver;
         public Gem CurGemToSwap;
 
@@ -192,7 +193,6 @@ namespace PuzzleDefense
 
             return false;
         }
-
         public Vector2 MapPositionToVector2(Point mapPosition)
         {
             return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;
@@ -272,8 +272,8 @@ namespace PuzzleDefense
 
                 case States.SwapGems:
 
-                    _cursorPos.X = CurGemOver._x;
-                    _cursorPos.Y = CurGemOver._y;
+                    _cursorPos.X = CurGemOver._x + _offSetGem.X;
+                    _cursorPos.Y = CurGemOver._y + _offSetGem.Y;
 
                     if (CurGemOver.GetState() == (int)Gem.States.None &&
                         CurGemToSwap.GetState() == (int)Gem.States.None)
@@ -301,8 +301,8 @@ namespace PuzzleDefense
         {
             if (_pad.Buttons.A == ButtonState.Released)
             {
-                _cursorPos.X += _pad.ThumbSticks.Left.X * 10;
-                _cursorPos.Y += _pad.ThumbSticks.Left.Y * -10;
+                _cursorPos.X += _stick.X;
+                _cursorPos.Y += _stick.Y;
             }
 
             _cursorPos = Vector2.Clamp(_cursorPos, Vector2.One * (CellSize / 2), new Vector2(_rect.Width, _rect.Height) - CellSize / 2);
@@ -326,8 +326,9 @@ namespace PuzzleDefense
 
             if (_controller[A])
             {
-                Misc.Log("A pressed");
+                //Misc.Log("A pressed");
 
+                _offSetGem = _cursorPos - CurGemOver.XY;
                 ChangeState((int)States.SelectGemToSwap);
             }
 
@@ -360,7 +361,9 @@ namespace PuzzleDefense
             {
                 batch.FillRectangle(_rectCursor.Translate(AbsXY), Color.White * .25f);
                 //batch.BevelledRectangle(_rectCursor.Translate(AbsXY), Vector2.One * 8, Color.White * .25f, 4f);
-                batch.FilledCircle(Game1._texCircle, AbsXY + _cursorPos, 16, Color.White * .5f);
+                //batch.FilledCircle(Game1._texCircle, AbsXY + _cursorPos, 16, Color.White * .5f);
+
+                batch.Draw(Game1._texCursorA,new Rectangle((AbsXY + _cursorPos - Vector2.One * 10).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2()/ 3).ToPoint()), Color.White);
             }
             if (indexLayer == (int)Game1.Layers.Debug) 
             {

@@ -129,14 +129,15 @@ namespace PuzzleDefense
                 batch.FilledCircle(Game1._texCircle, AbsXY, Radius, Color * .5f);
                 batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 8, Color * .75f);
                 
-            }
-            if (indexLayer == (int)Game1.Layers.Debug)
-            {
                 if (IsSelected)
                 {
                     //batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 20, Color.White * 1f);
-                    batch.Circle(AbsXY, Radius/2, 24, Color.White * 1f);
+                    batch.Circle(AbsXY, Radius/2, 24, Color.White * 1f, 3f);
                 }
+
+            }
+            if (indexLayer == (int)Game1.Layers.Debug)
+            {
 
                 //batch.CenterStringXY(Game1._fontMain, $"{(States)_state}", AbsXY, Color.White);
             }
