@@ -19,7 +19,7 @@ namespace PuzzleDefense
             SelectGemToSwap,
             SwapGems,
             ExploseGems,
-            PushGems,
+            DropGems,
             AddGems,
         }
 
@@ -297,6 +297,32 @@ namespace PuzzleDefense
                 DeleteGem(gem);
             }
         }
+        private void DropGems()
+        {
+            for (int x = 0; x < _grid.Width; x++)
+            {
+                for (int y = _grid.Height - 1; y >= 0; y--)
+                {
+                    var gem = GetGem(x, y);
+                    if (gem == null)
+                    {
+                        for (int above = y - 1; above >= 0; above--)
+                        {
+                            var gemAbove = GetGem(x, above);
+                            //if (_grid[x, above] != 0)
+                            if (gemAbove != null)
+                            {
+                                SetGem(x, y, gemAbove);
+                                SetGem(gemAbove.MapPosition, null);
+                                //_grid[x, y] = _grid[x, above];
+                                //_grid[x, above] = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         public Vector2 MapPositionToVector2(Point mapPosition)
         {
             return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;
@@ -405,11 +431,14 @@ namespace PuzzleDefense
                 case States.ExploseGems:
 
                     ClearMatches();
-                    ChangeState((int)States.Play);
+                    ChangeState((int)States.DropGems);
 
                     break;
 
-                case States.PushGems:
+                case States.DropGems:
+
+                    DropGems();
+                    ChangeState((int)States.Play);
                     break;
 
                 case States.AddGems:
@@ -451,9 +480,15 @@ namespace PuzzleDefense
             if (_controller[A])
             {
                 //Misc.Log("A pressed");
-
-                _offSetGem = _cursorPos - CurGemOver.XY;
-                ChangeState((int)States.SelectGemToSwap);
+                if (CurGemOver != null)
+                {
+                    _offSetGem = _cursorPos - CurGemOver.XY;
+                    ChangeState((int)States.SelectGemToSwap);
+                }
+                //else
+                //{
+                //    _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
+                //}
             }
 
             // Si le stick ne bouge pas alors on attire le curseur sur le CurGemOver
