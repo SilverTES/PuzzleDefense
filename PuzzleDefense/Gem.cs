@@ -144,7 +144,10 @@ namespace PuzzleDefense
 
             if (indexLayer == (int)Game1.Layers.Debug)
             {
-
+                if (IsSameColor)
+                {
+                    batch.Circle(AbsXY, Radius / 2 + 4, 24, Color.White * 1f, 3f);
+                }
                 //batch.CenterStringXY(Game1._fontMain, $"{(States)_state}", AbsXY, Color.White);
             }
 
