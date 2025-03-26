@@ -11,27 +11,37 @@ namespace PuzzleDefense
         Arena[] _arena = new Arena[4];
 
         Container _divMain;
-        float _angle;
+        Container _divTop;
+        Container _divBottom;
 
         Vector2 _mousePos;
         public ScreenPlay() 
         {
-            _arena[0] = (Arena)new Arena(new Point(8, 8), new Vector2(64, 64), PlayerIndex.One).AppendTo(this);
+            SetSize(Game1.ScreenW, Game1.ScreenH);
+
+            _arena[0] = (Arena)new Arena(new Point(6, 6), new Vector2(64, 64), PlayerIndex.One).AppendTo(this);
+            _arena[1] = (Arena)new Arena(new Point(6, 6), new Vector2(64, 64), PlayerIndex.Two).AppendTo(this);
 
             _divMain = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.VERTICAL);
-            _divMain.AppendTo(this);
-            
-            _divMain.Insert(_arena[0]);
+            _divTop = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.HORIZONTAL);
+            _divBottom = new Container(Style.Space.One * 10, Style.Space.One * 20, Mugen.Physics.Position.HORIZONTAL);
+
+
+            _divBottom.Insert(_arena[0]);
+            _divBottom.Insert(_arena[1]);
+
+
+            _divMain.Insert(_divTop);
+            _divMain.Insert(_divBottom);
             _divMain.SetPosition((Game1.ScreenW - _divMain.Rect.Width) / 2, (Game1.ScreenH - _divMain.Rect.Height) / 2);
             _divMain.Refresh();
 
+            _arena[0].InitGridRandom();
 
         }
         public override Node Update(GameTime gameTime)
         {
             _mousePos = WindowManager.GetMousePosition();
-
-            _angle += .005f;
 
             UpdateChilds(gameTime);
 
@@ -43,12 +53,16 @@ namespace PuzzleDefense
             
             if (indexLayer == (int)Game1.Layers.Main) 
             {
-                batch.GraphicsDevice.Clear(Color.DarkSlateBlue);
-                batch.Grid(Vector2.Zero, Game1.ScreenW, Game1.ScreenH, 40, 40, Color.DarkGray * .5f);
+                //batch.GraphicsDevice.Clear(Color.DarkSlateBlue);
+                batch.FillRectangle(AbsRectF, Color.DarkBlue * .5f);
+                batch.Grid(Vector2.Zero, Game1.ScreenW, Game1.ScreenH, 40, 40, Color.Black * .5f);
 
-                batch.Circle(Vector2.One * 400, 160, 8, Color.Yellow, 3f, _angle);
+                //batch.LineTexture(Game1._texLine, Vector2.One * 10, _mousePos, 5, Color.Gold);
+            }
 
-                batch.LineTexture(Game1._texLine, Vector2.One * 10, _mousePos, 5, Color.Gold);
+            if (indexLayer == (int)Game1.Layers.BackFX) 
+            {
+                batch.Draw(Game1._texBG00, new Rectangle(-4, -4, Game1.ScreenW, Game1.ScreenH), Color.White);
             }
 
             DrawChilds(batch, gameTime, indexLayer);

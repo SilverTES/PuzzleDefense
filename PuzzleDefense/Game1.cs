@@ -24,8 +24,11 @@ namespace PuzzleDefense
 
         public static KeyboardState Key;
 
+        public static Texture2D _texBG00;
         public static Texture2D _texLine;
         public static Texture2D _texCircle;
+
+        public static SpriteFont _fontMain;
 
         public Game1()
         {
@@ -54,6 +57,9 @@ namespace PuzzleDefense
 
         protected override void LoadContent()
         {
+            _texBG00 = Content.Load<Texture2D>("Images/background00");
+
+            _fontMain = Content.Load<SpriteFont>("Fonts/fontMain");
         }
 
         protected override void Update(GameTime gameTime)
