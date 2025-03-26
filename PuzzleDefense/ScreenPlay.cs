@@ -54,8 +54,8 @@ namespace PuzzleDefense
             if (indexLayer == (int)Game1.Layers.Main) 
             {
                 //batch.GraphicsDevice.Clear(Color.DarkSlateBlue);
-                batch.FillRectangle(AbsRectF, Color.DarkBlue * .5f);
-                batch.Grid(Vector2.Zero, Game1.ScreenW, Game1.ScreenH, 40, 40, Color.Black * .5f);
+                batch.FillRectangle(AbsRectF, Color.Black * .25f);
+                //batch.Grid(Vector2.Zero, Game1.ScreenW, Game1.ScreenH, 40, 40, Color.Black * .5f);
 
                 //batch.LineTexture(Game1._texLine, Vector2.One * 10, _mousePos, 5, Color.Gold);
             }
