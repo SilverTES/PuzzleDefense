@@ -127,10 +127,72 @@ namespace PuzzleDefense
                 {
                     //var gem = (Gem)new Gem(this, new Point(i, j), Gem.RandomColor()).AppendTo(this);
                     //_grid.Set(i, j, gem);
-                    AddGem(new Point(i, j), Gem.RandomColor());
+                    //AddGem(new Point(i, j), Gem.RandomColor());
+                    AddGem(new Point(i, j), GetSafeColor(i, j));
                 }
             }
         }
+        // Obtenir une couleur qui ne crée pas de match-3
+        private Color GetSafeColor(int x, int y)
+        {
+            while (true)
+            {
+                var color = Gem.RandomColor(); // Couleurs de 1 à 4
+
+                // Vérifier horizontalement (à gauche)
+                var left1 = GetGem(new Point(x - 1, y));
+                var left2 = GetGem(new Point(x - 2, y));
+
+                if (left1 != null && left2 != null)
+                    if (x >= 2 && left1.Color == color && left2.Color == color)
+                        continue;
+
+                // Vérifier verticalement (au-dessus)
+                var up1 = GetGem(new Point(x, y - 1));
+                var up2 = GetGem(new Point(x, y - 2));
+                
+                if (up1 != null && up2 != null)
+                    if (y >= 2 && up1.Color == color && up2.Color == color)
+                        continue;
+
+                // Si aucune condition de match-3 n'est violée, accepter cette couleur
+                return color;
+            }
+        }
+        public bool HasMatch3()
+        {
+            // Vérifier horizontalement
+            for (int y = 0; y < _grid.Height; y++)
+            {
+                for (int x = 0; x < _grid.Width - 2; x++)
+                {
+                    var gem = GetGem(new Point(x, y));
+                    var gemRight1 = GetGem(new Point(x + 1, y));
+                    var gemRight2 = GetGem(new Point(x + 2, y));
+
+                    if (gem != null && gemRight1 != null && gemRight2 != null)
+                        if (gem == gemRight1 && gem == gemRight2)
+                            return true;
+                }
+            }
+
+            // Vérifier verticalement
+            for (int x = 0; x < _grid.Width; x++)
+            {
+                for (int y = 0; y < _grid.Height - 2; y++)
+                {
+                    var gem = GetGem(new Point(x, y));
+                    var gemDown1 = GetGem(new Point(x, y + 1));
+                    var gemDown2 = GetGem(new Point(x, y + 2));
+
+                    if (gem == gemDown1 && gem == gemDown2)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public Vector2 MapPositionToVector2(Point mapPosition)
         {
             return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;

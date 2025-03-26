@@ -23,8 +23,8 @@ namespace PuzzleDefense
         {
             SetSize(Game1.ScreenW, Game1.ScreenH);
 
-            _arena[0] = (Arena)new Arena(new Point(6, 6), new Vector2(64, 64), PlayerIndex.One).AppendTo(this);
-            _arena[1] = (Arena)new Arena(new Point(6, 6), new Vector2(64, 64), PlayerIndex.Two).AppendTo(this);
+            _arena[0] = (Arena)new Arena(new Point(5, 5), new Vector2(64, 64), PlayerIndex.One).AppendTo(this);
+            _arena[1] = (Arena)new Arena(new Point(5, 5), new Vector2(64, 64), PlayerIndex.Two).AppendTo(this);
 
             _divMain = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.VERTICAL);
             _divTop = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.HORIZONTAL);
@@ -41,7 +41,10 @@ namespace PuzzleDefense
             _divMain.Refresh();
 
             _arena[0].InitGrid();
+            _arena[1].InitGrid();
 
+            Misc.Log($"_arena[0] Has Match 3 ? {_arena[0].HasMatch3()}");
+            Misc.Log($"_arena[1] Has Match 3 ? {_arena[1].HasMatch3()}");
         }
         public override Node Update(GameTime gameTime)
         {
