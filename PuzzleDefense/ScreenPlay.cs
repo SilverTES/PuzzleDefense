@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Mugen.Core;
 using Mugen.GFX;
 using Mugen.GUI;
+using Mugen.Input;
 
 namespace PuzzleDefense
 {
@@ -15,6 +17,8 @@ namespace PuzzleDefense
         Container _divBottom;
 
         Vector2 _mousePos;
+
+        KeyboardState _key;
         public ScreenPlay() 
         {
             SetSize(Game1.ScreenW, Game1.ScreenH);
@@ -36,12 +40,19 @@ namespace PuzzleDefense
             _divMain.SetPosition((Game1.ScreenW - _divMain.Rect.Width) / 2, (Game1.ScreenH - _divMain.Rect.Height) / 2);
             _divMain.Refresh();
 
-            _arena[0].InitGridRandom();
+            _arena[0].InitGrid();
 
         }
         public override Node Update(GameTime gameTime)
         {
+            _key = Game1.Key;
             _mousePos = WindowManager.GetMousePosition();
+
+            if (ButtonControl.OnePress("Shuffle", _key.IsKeyDown(Keys.F5)))
+            {
+                _arena[0].Shuffle();
+                _arena[1].Shuffle();
+            }
 
             UpdateChilds(gameTime);
 

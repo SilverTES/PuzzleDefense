@@ -38,7 +38,7 @@ namespace PuzzleDefense
 
         Arena _arena;
 
-        int _tempoMove = 24;
+        int _tempoMove = 12;
         int _ticMove = 0;
         Vector2 _from;
         Vector2 _goal;
@@ -88,8 +88,8 @@ namespace PuzzleDefense
 
                 case States.Move:
 
-                    _x = Easing.GetValue(Easing.BounceEaseOut, _ticMove, _from.X, _goal.X, _tempoMove);
-                    _y = Easing.GetValue(Easing.BounceEaseOut, _ticMove, _from.Y, _goal.Y, _tempoMove);
+                    _x = Easing.GetValue(Easing.QuadraticEaseOut, _ticMove, _from.X, _goal.X, _tempoMove);
+                    _y = Easing.GetValue(Easing.QuadraticEaseOut, _ticMove, _from.Y, _goal.Y, _tempoMove);
 
                     _ticMove++;
 
@@ -137,6 +137,8 @@ namespace PuzzleDefense
                     //batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 20, Color.White * 1f);
                     batch.Circle(AbsXY, Radius/2, 24, Color.White * 1f);
                 }
+
+                //batch.CenterStringXY(Game1._fontMain, $"{(States)_state}", AbsXY, Color.White);
             }
 
             return base.Draw(batch, gameTime, indexLayer);

@@ -84,6 +84,7 @@ namespace PuzzleDefense
                 return false;
 
             var gem = (Gem)new Gem(this, mapPosition, color).AppendTo(this);
+            _grid.Set(mapPosition.X, mapPosition.Y, gem);
 
             return true;
         }
@@ -110,15 +111,23 @@ namespace PuzzleDefense
                     _grid.Set(i, j, null);
                 }
             }
+
+            KillAll(UID.Get<Gem>());
         }
-        public void InitGridRandom()
+        public void Shuffle()
+        {
+            ClearGrid();
+            InitGrid();
+        }
+        public void InitGrid()
         {
             for (int i = 0; i < GridSize.X; i++)
             {
                 for (int j = 0; j < GridSize.Y; j++)
                 {
-                    var gem = (Gem)new Gem(this, new Point(i, j), Gem.RandomColor()).AppendTo(this);
-                    _grid.Set(i, j, gem);
+                    //var gem = (Gem)new Gem(this, new Point(i, j), Gem.RandomColor()).AppendTo(this);
+                    //_grid.Set(i, j, gem);
+                    AddGem(new Point(i, j), Gem.RandomColor());
                 }
             }
         }
@@ -181,6 +190,9 @@ namespace PuzzleDefense
                     _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
                     _swapDirection.Y = _stick.Y > 0 ? 1 : _stick.Y < 0 ? -1 : 0;
 
+                    if (Math.Abs(_swapDirection.X) > 0 && Math.Abs(_swapDirection.Y) > 0) 
+                        _swapDirection = Point.Zero;
+
                     CurGemToSwap = GetGem(_mapCursor + _swapDirection);
                     if (CurGemToSwap != null)
                     {
@@ -198,7 +210,13 @@ namespace PuzzleDefense
 
                 case States.SwapGems:
 
-                    ChangeState((int)States.Play);
+                    _cursorPos.X = CurGemOver._x;
+                    _cursorPos.Y = CurGemOver._y;
+
+                    if (CurGemOver.GetState() == (int)Gem.States.None &&
+                        CurGemToSwap.GetState() == (int)Gem.States.None)
+
+                        ChangeState((int)States.Play);
 
                     break;
 
@@ -219,8 +237,11 @@ namespace PuzzleDefense
         }
         private void Play()
         {
-            _cursorPos.X += _pad.ThumbSticks.Left.X * 10;
-            _cursorPos.Y += _pad.ThumbSticks.Left.Y * -10;
+            if (_pad.Buttons.A == ButtonState.Released)
+            {
+                _cursorPos.X += _pad.ThumbSticks.Left.X * 10;
+                _cursorPos.Y += _pad.ThumbSticks.Left.Y * -10;
+            }
 
             _cursorPos = Vector2.Clamp(_cursorPos, Vector2.One * (CellSize / 2), new Vector2(_rect.Width, _rect.Height) - CellSize / 2);
 
@@ -232,17 +253,13 @@ namespace PuzzleDefense
             _rectCursor.Width = CellSize.X;
             _rectCursor.Height = CellSize.Y;
 
+            var prevGem = GetGem(_prevMapCursor);
+            if (prevGem != null)
+                prevGem.IsSelected = false;
 
-            if (_mapCursor != _prevMapCursor)
-            {
-                var prevGem = GetGem(_prevMapCursor);
-                if (prevGem != null)
-                    prevGem.IsSelected = false;
-
-                CurGemOver = GetGem(_mapCursor);
-                if (CurGemOver != null)
-                    CurGemOver.IsSelected = true;
-            }
+            CurGemOver = GetGem(_mapCursor);
+            if (CurGemOver != null)
+                CurGemOver.IsSelected = true;
 
 
             if (_controller[A])
