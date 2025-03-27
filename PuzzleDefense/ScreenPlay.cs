@@ -27,6 +27,7 @@ namespace PuzzleDefense
 
             _arena[0] = (Arena)new Arena(new Point(6, 6), new Vector2(cellSize, cellSize), PlayerIndex.One).AppendTo(this);
             _arena[1] = (Arena)new Arena(new Point(6, 6), new Vector2(cellSize, cellSize), PlayerIndex.Two).AppendTo(this);
+            _arena[2] = (Arena)new Arena(new Point(6, 6), new Vector2(cellSize, cellSize), PlayerIndex.Three).AppendTo(this);
 
             _divMain = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.VERTICAL);
             _divTop = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.HORIZONTAL);
@@ -35,6 +36,7 @@ namespace PuzzleDefense
 
             _divBottom.Insert(_arena[0]);
             _divBottom.Insert(_arena[1]);
+            _divBottom.Insert(_arena[2]);
 
 
             _divMain.Insert(_divTop);
@@ -44,6 +46,7 @@ namespace PuzzleDefense
 
             _arena[0].InitGrid();
             _arena[1].InitGrid();
+            _arena[2].InitGrid();
 
             Misc.Log($"_arena[0] Has Match 3 ? {_arena[0].HasMatch3()}");
             Misc.Log($"_arena[1] Has Match 3 ? {_arena[1].HasMatch3()}");

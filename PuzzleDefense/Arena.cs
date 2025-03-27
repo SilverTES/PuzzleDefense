@@ -554,7 +554,7 @@ namespace PuzzleDefense
                     {
                         if (CurGemToSwap != CurGemOver)
                         {
-                            if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
+                            //if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
                             {
                                 SwapGem(CurGemOver, CurGemToSwap);
                                 ChangeState((int)States.SwapGems);
