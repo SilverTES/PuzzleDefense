@@ -19,8 +19,9 @@ namespace PuzzleDefense
             SelectGemToSwap,
             SwapGems,
             ExploseGems,
-            DropGems,
-            AddGems,
+            PushGemsToDown,
+            AddNewGemsToDown,
+            Action,
         }
 
         public Point GridSize { get; private set; }
@@ -85,60 +86,37 @@ namespace PuzzleDefense
         {
             return _grid.IsInGrid(x, y);
         }
-        public bool AddGem(Point mapPosition, Color color)
+        public Gem AddInGrid(Point mapPosition, Color color)
         {
-            if (!IsIngrid(mapPosition)) 
-                return false;
-
             var gem = (Gem)new Gem(this, mapPosition, color).AppendTo(this);
-            _grid.Set(mapPosition.X, mapPosition.Y, gem);
+            SetInGrid(mapPosition.X, mapPosition.Y, gem);
 
-            return true;
+            return gem;
         }
-        public bool DeleteGem(Point mapPosition)
+        public Gem DeleteInGrid(Gem gem)
         {
-            if (!IsIngrid(mapPosition))
-                return false;
+            _grid.Set(gem.MapPosition.X, gem.MapPosition.Y, null);
 
-            var gem = GetGem(mapPosition);
-            if (gem != null)
-            {
-                gem.KillMe();
-                SetGem(mapPosition, null);
-            }
-
-            return true;
+            return gem;
         }
-        public bool DeleteGem(Gem gem)
+        public void DeleteInGrid(Point mapPosition)
         {
-            return DeleteGem(gem.MapPosition);
+            _grid.Set(mapPosition.X, mapPosition.Y, null);
         }
-        public Gem GetGem(Point mapPosition)
+        public Gem GetInGrid(Point mapPosition)
         {
-            if (!IsIngrid(mapPosition))
-                return null;
-
             return _grid.Get(mapPosition.X, mapPosition.Y);
         }
-        public Gem GetGem(int x, int y)
+        public Gem GetInGrid(int x, int y)
         {
-            if (!IsIngrid(x, y))
-                return null;
-
             return _grid.Get(x, y);
         }
-        public Gem SetGem(Point mapPosition, Gem gem)
+        public Gem SetInGrid(Point mapPosition, Gem gem)
         {
-            if (!IsIngrid(mapPosition))
-                return null;
-
             return _grid.Set(mapPosition.X, mapPosition.Y, gem);
         }
-        public Gem SetGem(int x, int y, Gem gem)
+        public Gem SetInGrid(int x, int y, Gem gem)
         {
-            if (!IsIngrid(x, y))
-                return null;
-
             return _grid.Set(x, y, gem);
         }
         public void ClearGrid()
@@ -167,7 +145,7 @@ namespace PuzzleDefense
                     //var gem = (Gem)new Gem(this, new Point(i, j), Gem.RandomColor()).AppendTo(this);
                     //_grid.Set(i, j, gem);
                     //AddGem(new Point(i, j), Gem.RandomColor());
-                    AddGem(new Point(i, j), GetSafeColor(i, j));
+                    AddInGrid(new Point(i, j), GetSafeColor(i, j));
                 }
             }
         }
@@ -179,16 +157,16 @@ namespace PuzzleDefense
                 var color = Gem.RandomColor(); // Couleurs de 1 à 4
 
                 // Vérifier horizontalement (à gauche)
-                var left1 = GetGem(new Point(x - 1, y));
-                var left2 = GetGem(new Point(x - 2, y));
+                var left1 = GetInGrid(new Point(x - 1, y));
+                var left2 = GetInGrid(new Point(x - 2, y));
 
                 if (left1 != null && left2 != null)
                     if (x >= 2 && left1.Color == color && left2.Color == color)
                         continue;
 
                 // Vérifier verticalement (au-dessus)
-                var up1 = GetGem(new Point(x, y - 1));
-                var up2 = GetGem(new Point(x, y - 2));
+                var up1 = GetInGrid(new Point(x, y - 1));
+                var up2 = GetInGrid(new Point(x, y - 2));
                 
                 if (up1 != null && up2 != null)
                     if (y >= 2 && up1.Color == color && up2.Color == color)
@@ -205,9 +183,9 @@ namespace PuzzleDefense
             {
                 for (int x = 0; x < _grid.Width - 2; x++)
                 {
-                    var gem = GetGem(x, y);
-                    var gemRight1 = GetGem(x + 1, y);
-                    var gemRight2 = GetGem(x + 2, y);
+                    var gem = GetInGrid(x, y);
+                    var gemRight1 = GetInGrid(x + 1, y);
+                    var gemRight2 = GetInGrid(x + 2, y);
 
                     if (gem != null && gemRight1 != null && gemRight2 != null)
                         if (gem.Color == gemRight1.Color && gem.Color == gemRight2.Color)
@@ -220,9 +198,9 @@ namespace PuzzleDefense
             {
                 for (int y = 0; y < _grid.Height - 2; y++)
                 {
-                    var gem = GetGem(x, y);
-                    var gemDown1 = GetGem(x, y + 1);
-                    var gemDown2 = GetGem(x, y + 2);
+                    var gem = GetInGrid(x, y);
+                    var gemDown1 = GetInGrid(x, y + 1);
+                    var gemDown2 = GetInGrid(x, y + 2);
 
                     if (gem != null && gemDown1 != null && gemDown2 != null)
                         if (gem.Color == gemDown1.Color && gem.Color == gemDown2.Color)
@@ -236,27 +214,26 @@ namespace PuzzleDefense
         public List<Gem> FindMatches()
         {
             var matchedGems = new List<Gem>();
-            //_matchedGems.Clear(); // Réinitialiser la liste des matchs
 
             // Vérifier horizontalement
             for (int y = 0; y < _grid.Height; y++)
             {
                 for (int x = 0; x < _grid.Width - 2; x++)
                 {
-                    var gem = GetGem(x, y);
-                    var gemRight1 = GetGem(x + 1, y);
-                    var gemRight2 = GetGem(x + 2, y);
+                    var gem = GetInGrid(x, y);
+                    var gemRight1 = GetInGrid(x + 1, y);
+                    var gemRight2 = GetInGrid(x + 2, y);
 
                     if (gem != null && gemRight1 != null && gemRight2 != null)
                         if (x + 2 < _grid.Width && gemRight1.Color == gem.Color && gemRight2.Color == gem.Color)
                         {
                             // Ajouter toutes les gemmes du match à la liste
                             int matchLength = 3;
-                            while (x + matchLength < _grid.Width && GetGem(x + matchLength, y)!.Color == gem.Color)
+                            while (x + matchLength < _grid.Width && GetInGrid(x + matchLength, y) != null ? GetInGrid(x + matchLength, y)!.Color == gem.Color : false)
                                 matchLength++;
 
                             for (int i = 0; i < matchLength; i++)
-                                matchedGems.Add(GetGem(x + i, y));
+                                matchedGems.Add(GetInGrid(x + i, y));
 
                             x += matchLength - 1; // Sauter les gemmes déjà matchées
                         }
@@ -268,19 +245,19 @@ namespace PuzzleDefense
             {
                 for (int y = 0; y < _grid.Height - 2; y++)
                 {
-                    var gem = GetGem(x, y);
-                    var gemDown1 = GetGem(x, y + 1);
-                    var gemDown2 = GetGem(x, y + 2);
+                    var gem = GetInGrid(x, y);
+                    var gemDown1 = GetInGrid(x, y + 1);
+                    var gemDown2 = GetInGrid(x, y + 2);
 
                     if (gem != null && gemDown1 != null && gemDown2 != null)
                         if (y + 2 < _grid.Height && gemDown1.Color == gem.Color && gemDown2.Color == gem.Color)
                         {
                             int matchLength = 3;
-                            while (y + matchLength < _grid.Height && GetGem(x, y + matchLength).Color == gem.Color)
+                            while (y + matchLength < _grid.Height && GetInGrid(x, y + matchLength) != null ? GetInGrid(x, y + matchLength).Color == gem.Color : false)
                                 matchLength++;
 
                             for (int i = 0; i < matchLength; i++)
-                                matchedGems.Add(GetGem(x, y + i));
+                                matchedGems.Add(GetInGrid(x, y + i));
 
                             y += matchLength - 1;
                         }
@@ -289,36 +266,58 @@ namespace PuzzleDefense
 
             return matchedGems;
         }
-        public void ClearMatches()
+        public void ExploseGems()
         {
             var gems = FindMatches();
             foreach (var gem in gems)
             {
-                DeleteGem(gem);
+                gem.ExploseMe();
+                DeleteInGrid(gem);
             }
         }
-        private void DropGems()
+        public void PushGemsToDown()
         {
-            for (int x = 0; x < _grid.Width; x++)
+            for (int row = _grid.Height; row >= 0; row--)
             {
-                for (int y = _grid.Height - 1; y >= 0; y--)
+                for (int col = 0; col < _grid.Width; col++)
                 {
-                    var gem = GetGem(x, y);
-                    if (gem == null)
+                    var gem = _grid.Get(col, row);
+
+                    if (gem != null)
                     {
-                        for (int above = y - 1; above >= 0; above--)
+                        gem.IsFall = false;
+                        // scan vertical
+                        for (int scanY = row + 1; scanY < _grid.Height; scanY++)
                         {
-                            var gemAbove = GetGem(x, above);
-                            //if (_grid[x, above] != 0)
-                            if (gemAbove != null)
+                            if (_grid.Get(col, scanY) == null)
                             {
-                                SetGem(x, y, gemAbove);
-                                SetGem(gemAbove.MapPosition, null);
-                                //_grid[x, y] = _grid[x, above];
-                                //_grid[x, above] = 0;
-                                break;
+                                gem.IsFall = true;
+                                gem.GoalPosition = new Point(col, scanY);
                             }
                         }
+
+                        if (gem.IsFall)
+                        {
+                            DeleteInGrid(gem);
+                            gem.MoveTo(gem.GoalPosition);
+                        }
+                    }
+                }
+            }
+        }
+        public void AddNewGemsToDown()
+        {
+            for (int row = _grid.Height - 1; row >= 0; row--)
+            {
+                for (int col = 0; col < _grid.Width; col++)
+                {
+                    if (_grid.Get(col, row) == null)
+                    {
+                        var gem = AddInGrid(new Point(col, -1), Gem.RandomColor());
+                        
+                        if (gem != null)
+                            gem.MoveTo(new Point(col, row));
+
                     }
                 }
             }
@@ -366,8 +365,24 @@ namespace PuzzleDefense
 
             var tempPositionA = gemA.MapPosition;
 
-            gemA.MoveTo(gemB.MapPosition);
-            gemB.MoveTo(tempPositionA);
+            gemA.SwapTo(gemB.MapPosition);
+            gemB.SwapTo(tempPositionA);
+
+            return true;
+        }
+        public bool IsAllGemsFinishMove()
+        {
+            var gems = GroupOf<Gem>();
+
+            for (int i = 0; i < gems.Count; i++)
+            {
+                var gem = gems[i];
+                if (gem == null) 
+                    continue;
+
+                if (gem.IsFinishMove == false)
+                    return false;
+            }
 
             return true;
         }
@@ -402,7 +417,7 @@ namespace PuzzleDefense
                     if (Math.Abs(_swapDirection.X) > 0 && Math.Abs(_swapDirection.Y) > 0) 
                         _swapDirection = Point.Zero;
 
-                    CurGemToSwap = GetGem(_mapCursor + _swapDirection);
+                    CurGemToSwap = GetInGrid(_mapCursor + _swapDirection);
                     if (CurGemToSwap != null)
                     {
                         if (CurGemToSwap != CurGemOver)
@@ -425,23 +440,34 @@ namespace PuzzleDefense
                         CurGemToSwap.GetState() == (int)Gem.States.None)
 
                         ChangeState((int)States.ExploseGems);
+                        //ChangeState((int)States.Play);
 
                     break;
 
                 case States.ExploseGems:
 
-                    ClearMatches();
-                    ChangeState((int)States.DropGems);
+                    ExploseGems();
+                    ChangeState((int)States.PushGemsToDown);
 
                     break;
 
-                case States.DropGems:
+                case States.PushGemsToDown:
 
-                    DropGems();
+                    PushGemsToDown();
+                    ChangeState((int)States.AddNewGemsToDown);
+                    break;
+
+                case States.AddNewGemsToDown:
+
+                    AddNewGemsToDown();
+                    ChangeState((int)States.Action);
+
+                    break;
+
+                case States.Action:
+
                     ChangeState((int)States.Play);
-                    break;
 
-                case States.AddGems:
                     break;
 
                 default:
@@ -468,41 +494,49 @@ namespace PuzzleDefense
             _rectCursor.Width = CellSize.X;
             _rectCursor.Height = CellSize.Y;
 
-            var prevGem = GetGem(_prevMapCursor);
-            if (prevGem != null)
-                prevGem.IsSelected = false;
-
-            CurGemOver = GetGem(_mapCursor);
-            if (CurGemOver != null)
-                CurGemOver.IsSelected = true;
-
-
-            if (_controller[A])
+            if (IsAllGemsFinishMove())
             {
-                //Misc.Log("A pressed");
-                if (CurGemOver != null)
+                if (HasMatch3())
                 {
-                    _offSetGem = _cursorPos - CurGemOver.XY;
-                    ChangeState((int)States.SelectGemToSwap);
+                    Misc.Log("Match 3 found ! explose them all !");
+                    ChangeState((int)States.ExploseGems);
                 }
-                //else
-                //{
-                //    _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
-                //}
+                else
+                {
+                    var prevGem = GetInGrid(_prevMapCursor);
+                    if (prevGem != null)
+                        prevGem.IsSelected = false;
+
+                    CurGemOver = GetInGrid(_mapCursor);
+                    if (CurGemOver != null)
+                        CurGemOver.IsSelected = true;
+
+
+                    if (_controller[A])
+                    {
+                        //Misc.Log("A pressed");
+                        if (CurGemOver != null)
+                        {
+                            _offSetGem = _cursorPos - CurGemOver.XY;
+                            ChangeState((int)States.SelectGemToSwap);
+                        }
+                    }
+
+                }
             }
 
             // Si le stick ne bouge pas alors on attire le curseur sur le CurGemOver
             if (!IsStickMove())
             {
-                _offSetGem /= 1.1f;
-
-                if (CurGemOver != null)
-                    _cursorPos = CurGemOver.XY + _offSetGem;
+                if (_offSetGem.Length() < 16)
+                {
+                    _offSetGem /= 2f;
+                    _cursorPos = MapPositionToVector2(_mapCursor) + _offSetGem;
+                }
             }
             else
             {
-                if (CurGemOver != null)
-                    _offSetGem = _cursorPos - CurGemOver.XY;
+                _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
             }
 
 
@@ -550,6 +584,23 @@ namespace PuzzleDefense
 
                 //if (CurGemOver != null)
                 //    batch.Line(CurGemOver.AbsXY, CurGemOver.AbsXY + _stick * 5, Color.White, 8);
+                for (int i = 0; i < GridSize.X; i++)
+                {
+                    for (int j = 0; j < GridSize.Y; j++)
+                    {
+                        Vector2 pos = new Vector2(i * CellSize.X, j * CellSize.Y) + CellSize / 2;
+
+                        var gem = _grid.Get(i, j);
+                        int type = -1; 
+                        
+                        if (gem != null)
+                            type = gem._type;
+
+
+                        batch.CenterStringXY(Game1._fontMain, $"{type}", AbsXY + pos, Color.White * .75f);
+                    }
+                }
+
             }
 
             DrawChilds(batch, gameTime, indexLayer);

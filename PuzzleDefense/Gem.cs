@@ -12,6 +12,7 @@ namespace PuzzleDefense
         {
             None,
             Move,
+            Swap,
             Dead,
         }
 
@@ -24,7 +25,7 @@ namespace PuzzleDefense
             Color.BlueViolet,
             Color.Gold,
             //Color.Gray, // Gem do nothing !
-            //Color.HotPink,
+            Color.HotPink,
         ];
 
         public Color Color;
@@ -42,9 +43,15 @@ namespace PuzzleDefense
         int _ticMove = 0;
         Vector2 _from;
         Vector2 _goal;
+        public bool IsFinishMove = true;
 
         public Point GoalPosition;
         public bool IsFall = false;
+
+        float _radius;
+        float _ticRadius = 0;
+
+        int _tempoDead = 24;
 
         public Gem(Arena arena, Point mapPosition, Color color) 
         {
@@ -54,6 +61,7 @@ namespace PuzzleDefense
             MapPosition = mapPosition;
             Color = color;
             _arena = arena;
+            _radius = Radius;
 
             SetSize(Vector2.One * Radius);
 
@@ -62,20 +70,43 @@ namespace PuzzleDefense
             SetState((int)States.None);
 
         }
+        public void ExploseMe()
+        {
+            new FxExplose(AbsXY, Color, 10, 40).AppendTo(_parent);
+            new PopInfo(NbSameColor.ToString(), Color.White, Color, 0, 32, 32).SetPosition(XY).AppendTo(_parent);
+
+            ChangeState((int)States.Dead);
+        }
         public static Color RandomColor()
         {
             return Colors[Misc.Rng.Next(0, Colors.Length)];
         }
         public void MoveTo(Point goalPosition)
         {
+            IsFinishMove = false;
+            _tempoMove = 30;
             GoalPosition = goalPosition;
 
-            _arena.SetGem(goalPosition, this);
+            _arena.SetInGrid(goalPosition, this);
 
             _from = _arena.MapPositionToVector2(MapPosition);
             _goal = _arena.MapPositionToVector2(goalPosition);
 
             ChangeState((int)States.Move);
+            //Console.WriteLine("Gem Move Down");
+        }
+        public void SwapTo(Point goalPosition)
+        {
+            IsFinishMove = false;
+            _tempoMove = 12;
+            GoalPosition = goalPosition;
+
+            _arena.SetInGrid(goalPosition, this);
+
+            _from = _arena.MapPositionToVector2(MapPosition);
+            _goal = _arena.MapPositionToVector2(goalPosition);
+
+            ChangeState((int)States.Swap);
             //Console.WriteLine("Gem Move Down");
         }
         protected override void RunState(GameTime gameTime)
@@ -87,6 +118,25 @@ namespace PuzzleDefense
                     break;
 
                 case States.Move:
+
+                    _x = Easing.GetValue(Easing.BounceEaseOut, _ticMove, _from.X, _goal.X, _tempoMove);
+                    _y = Easing.GetValue(Easing.BounceEaseOut, _ticMove, _from.Y, _goal.Y, _tempoMove);
+
+                    _ticMove++;
+
+                    if (_ticMove > _tempoMove)
+                    {
+                        _ticMove = 0;
+
+                        MapPosition = GoalPosition;
+
+                        ChangeState((int)States.None);
+                        IsFinishMove = true;
+                    }
+
+                    break;
+
+                case States.Swap:
 
                     _x = Easing.GetValue(Easing.QuadraticEaseOut, _ticMove, _from.X, _goal.X, _tempoMove);
                     _y = Easing.GetValue(Easing.QuadraticEaseOut, _ticMove, _from.Y, _goal.Y, _tempoMove);
@@ -100,12 +150,24 @@ namespace PuzzleDefense
                         MapPosition = GoalPosition;
 
                         ChangeState((int)States.None);
-
+                        IsFinishMove = true;
                     }
 
                     break;
 
                 case States.Dead:
+
+                    _tempoDead--;
+
+                    if (_tempoDead <= 0)
+                    {
+                        KillMe();
+                    }
+
+                    _ticRadius++;
+
+                    _radius = Easing.GetValue(Easing.BounceEaseOut, _ticRadius, Radius, 0, 24);
+
                     break;
 
                 default:
@@ -126,9 +188,9 @@ namespace PuzzleDefense
         {
             if (indexLayer == (int)Game1.Layers.Main) 
             {
-                batch.FilledCircle(Game1._texCircle, AbsXY, Radius, Color * .25f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 8, Color * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, Radius - 16, Color * .75f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius, Color * .25f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 8, Color * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 16, Color * .75f);
                 
                 if (IsSelected)
                 {

@@ -31,6 +31,7 @@ namespace PuzzleDefense
 
 
         public static SpriteFont _fontMain;
+        public static SpriteFont _fontMedium;
 
         public Game1()
         {
@@ -63,6 +64,7 @@ namespace PuzzleDefense
             _texCursorA = Content.Load<Texture2D>("Images/CursorA");
 
             _fontMain = Content.Load<SpriteFont>("Fonts/fontMain");
+            _fontMedium = Content.Load<SpriteFont>("Fonts/fontMedium");
         }
 
         protected override void Update(GameTime gameTime)
