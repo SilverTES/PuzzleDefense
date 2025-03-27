@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Mugen.Core;
+using Mugen.Event;
 using Mugen.GFX;
 using Mugen.Input;
 using Mugen.Physics;
@@ -24,6 +25,13 @@ namespace PuzzleDefense
             Action,
         }
 
+        public enum Timers
+        {
+            None,
+            Help,
+        }
+        TimerEvent _timers;
+
         public Point GridSize { get; private set; }
         public Vector2 CellSize { get; private set; }
         Grid2D<Gem> _grid;
@@ -42,7 +50,19 @@ namespace PuzzleDefense
         public Gem CurGemOver;
         public Gem CurGemToSwap;
 
-        
+        public class SwapCandidate
+        {
+            public Point GemPosition { get; set; } // Position de la gemme candidate
+            public Point SwapPosition { get; set; } // Position avec laquelle échanger
+
+            public SwapCandidate(Point gemPos, Point swapPos)
+            {
+                GemPosition = gemPos;
+                SwapPosition = swapPos;
+            }
+        }
+
+
         int _score = 0;
         //private List<Gem> _matchedGems; // Liste des positions des gemmes matchées
 
@@ -81,6 +101,12 @@ namespace PuzzleDefense
             _cursorPos = _rect.Center;
 
             SetState((int)States.Play);
+
+            _timers = new TimerEvent(Enums.Count<Timers>());
+
+            _timers.SetTimer((int)Timers.Help, TimerEvent.Time(0, 0, 3), true);
+            _timers.StartTimer((int)Timers.Help);
+
         }
         public bool IsIngrid(Point mapPosition)
         {
@@ -180,6 +206,46 @@ namespace PuzzleDefense
                 return color;
             }
         }
+        // Trouver toutes les gemmes qui peuvent créer un match par swap
+        public List<SwapCandidate> FindPotentialMatches()
+        {
+            var swapCandidates = new List<SwapCandidate>();
+
+            for (int x = 0; x < _grid.Width; x++)
+            {
+                for (int y = 0; y < _grid.Height; y++)
+                {
+                    if (GetInGrid(x, y) == null) continue; // Ignorer les cases vides
+
+                    Point pos = new Point(x, y);
+                    Point[] directions = new Point[]
+                    {
+                    new Point(1, 0),  // Droite
+                    new Point(-1, 0), // Gauche
+                    new Point(0, 1),  // Bas
+                    new Point(0, -1)  // Haut
+                    };
+
+                    foreach (var dir in directions)
+                    {
+                        Point swapPos = pos + dir;
+                        if (WillCreateMatch(pos, swapPos))
+                        {
+                            swapCandidates.Add(new SwapCandidate(pos, swapPos));
+                        }
+                    }
+                }
+            }
+
+            //// Debug : Afficher les candidats trouvés
+            //Misc.Log($"Nombre de swaps possibles : {swapCandidates.Count}");
+            //foreach (var candidate in swapCandidates)
+            //{
+            //    Misc.Log($"Gem à {candidate.GemPosition} peut swapper avec {candidate.SwapPosition}");
+            //}
+
+            return swapCandidates;
+        }
         public bool HasMatch3()
         {
             // Vérifier horizontalement
@@ -214,6 +280,62 @@ namespace PuzzleDefense
 
             return false;
         }
+        private bool IsValidPosition(int x, int y)
+        {
+            return x >= 0 && x < _grid.Width && y >= 0 && y < _grid.Height;
+        }
+        // Prédire si un swap crée un match-3
+        private bool WillCreateMatch(Point pos1, Point pos2)
+        {
+            int x1 = (int)pos1.X, y1 = (int)pos1.Y;
+            int x2 = (int)pos2.X, y2 = (int)pos2.Y;
+
+            if (!IsValidPosition(x1, y1) || !IsValidPosition(x2, y2) ||
+                (Math.Abs(x1 - x2) + Math.Abs(y1 - y2) != 1))
+                return false;
+
+            Gem gem1 = GetInGrid(x1, y1);
+            Gem gem2 = GetInGrid(x2, y2);
+
+            // Vérifier si les positions sont occupées
+            if (gem1 == null || gem2 == null)
+                return false;
+
+            // Simuler l'échange
+            SetInGrid(x1, y1, gem2);
+            SetInGrid(x2, y2, gem1);
+
+            bool hasMatch = CheckMatchesAt(x1, y1) || CheckMatchesAt(x2, y2);
+
+            // Annuler l'échange
+            SetInGrid(x1, y1, gem1);
+            SetInGrid(x2, y2, gem2);
+
+            return hasMatch;
+        }
+        private bool CheckMatchesAt(int x, int y)
+        {
+            if (GetInGrid(x, y) == null) return false;
+            var color = GetInGrid(x, y).Color;
+
+            // Vérifier horizontalement
+            int leftCount = 0, rightCount = 0;
+            for (int i = 1; i <= 2 && x - i >= 0; i++)
+                if (GetInGrid(x - i, y)?.Color == color) leftCount++; else break;
+            for (int i = 1; i <= 2 && x + i < _grid.Width; i++)
+                if (GetInGrid(x + i, y)?.Color == color) rightCount++; else break;
+            if (leftCount + rightCount + 1 >= 3) return true;
+
+            // Vérifier verticalement
+            int upCount = 0, downCount = 0;
+            for (int i = 1; i <= 2 && y - i >= 0; i++)
+                if (GetInGrid(x, y - i)?.Color == color) upCount++; else break;
+            for (int i = 1; i <= 2 && y + i < _grid.Height; i++)
+                if (GetInGrid(x, y + i)?.Color == color) downCount++; else break;
+            if (upCount + downCount + 1 >= 3) return true;
+
+            return false;
+        }
         // Trouver tous les match-3 (ou plus)
         public List<Gem> FindMatches()
         {
@@ -228,8 +350,8 @@ namespace PuzzleDefense
                     var gemRight1 = GetInGrid(x + 1, y);
                     var gemRight2 = GetInGrid(x + 2, y);
 
-                    if (gem != null && gemRight1 != null && gemRight2 != null)
-                        if (x + 2 < _grid.Width && gemRight1.Color == gem.Color && gemRight2.Color == gem.Color)
+                    //if (gem != null && gemRight1 != null && gemRight2 != null)
+                        if (x + 2 < _grid.Width && gemRight1?.Color == gem?.Color && gemRight2?.Color == gem.Color)
                         {
                             // Ajouter toutes les gemmes du match à la liste
                             int matchLength = 3;
@@ -253,8 +375,8 @@ namespace PuzzleDefense
                     var gemDown1 = GetInGrid(x, y + 1);
                     var gemDown2 = GetInGrid(x, y + 2);
 
-                    if (gem != null && gemDown1 != null && gemDown2 != null)
-                        if (y + 2 < _grid.Height && gemDown1.Color == gem.Color && gemDown2.Color == gem.Color)
+                    //if (gem != null && gemDown1 != null && gemDown2 != null)
+                        if (y + 2 < _grid.Height && gemDown1?.Color == gem?.Color && gemDown2?.Color == gem.Color)
                         {
                             int matchLength = 3;
                             while (y + matchLength < _grid.Height && GetInGrid(x, y + matchLength) != null ? GetInGrid(x, y + matchLength).Color == gem.Color : false)
@@ -275,6 +397,7 @@ namespace PuzzleDefense
             var gems = FindMatches();
             foreach (var gem in gems)
             {
+                gem.NbSameColor = gems.Count;
                 gem.ExploseMe();
                 DeleteInGrid(gem);
                 _score++;
@@ -431,7 +554,7 @@ namespace PuzzleDefense
                     {
                         if (CurGemToSwap != CurGemOver)
                         {
-                            //if (_pad.Buttons.A == ButtonState.Pressed)
+                            if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
                             {
                                 SwapGem(CurGemOver, CurGemToSwap);
                                 ChangeState((int)States.SwapGems);
@@ -564,11 +687,24 @@ namespace PuzzleDefense
                 _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
             }
 
+            if (_timers.OnTimer((int)Timers.Help))
+            {
+                var result = FindPotentialMatches();
+
+                if (result.Count > 0)
+                {
+                    var gemA = GetInGrid(result[0].GemPosition);
+                    var gemB = GetInGrid(result[0].SwapPosition);
+
+                    gemA.Shake.SetIntensity(3, .01f);
+                    gemB.Shake.SetIntensity(3, .01f);
+                }
+            }
 
         }
         public override Node Update(GameTime gameTime)
         {
-            
+            _timers.Update();
             HandleInput();
 
             RunState(gameTime);
@@ -583,13 +719,16 @@ namespace PuzzleDefense
             {
                 batch.FillRectangle(AbsRect, Color.Black * .5f);
 
-                if (_state == (int)States.SwapGems)
+                if (_state == (int)States.SelectGemToSwap)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.White * .5f);
 
                 if (_state == (int)States.Play)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.Black * .5f);
 
-                //batch.Grid(AbsXY, _rect.Width, _rect.Height, CellSize.X, CellSize.Y, Color.Black * .5f, 3f);
+
+
+
+                //batch.Grid(AbsXY, _rect.Width, _rect.Height, CellSize.X, CellSize.Y, Color.Black * .25f, 3f);
                 //batch.Rectangle(AbsRectF.Extend(4f), Color.Black * 1f, 3f);
 
                 //batch.Rectangle(AbsXY + _cursorPos.ToVector2() * CellSize, CellSize, Color.Yellow, 3f);
@@ -598,14 +737,19 @@ namespace PuzzleDefense
 
             if (indexLayer == (int)Game1.Layers.BackFX)
             {
+                // Draw Sigh
+                batch.LineTexture(Game1._texLine, new Vector2(AbsX + _cursorPos.X, AbsY), new Vector2(AbsX + _cursorPos.X, AbsY + _rect.Height), 10f, Color.White * .5f);
+                batch.LineTexture(Game1._texLine, new Vector2(AbsX, AbsY + _cursorPos.Y), new Vector2(AbsX + _rect.Width, AbsY + _cursorPos.Y), 10f, Color.White * .5f);
             }
+
             if (indexLayer == (int)Game1.Layers.HUD)
             {
                 //batch.BevelledRectangle(_rectCursor.Translate(AbsXY), Vector2.One * 8, Color.White * .25f, 4f);
                 //batch.FilledCircle(Game1._texCircle, AbsXY + _cursorPos, 16, Color.White * .5f);
 
-                batch.Draw(Game1._texCursorA,new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint() + new Point(4, 4), (Game1._texCursorA.Bounds.Size.ToVector2()/ 2).ToPoint()), Color.Black * .5f);
-                batch.Draw(Game1._texCursorA,new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2()/ 2).ToPoint()), Color.White);
+                batch.Draw(Game1._texCursorA, new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint() + new Point(4, 4), (Game1._texCursorA.Bounds.Size.ToVector2() / 2).ToPoint()), Color.Black * .5f);
+                batch.Draw(Game1._texCursorA, new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2() / 2).ToPoint()), Color.White);
+
             }
             if (indexLayer == (int)Game1.Layers.Debug) 
             {

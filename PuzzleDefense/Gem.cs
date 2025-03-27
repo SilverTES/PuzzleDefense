@@ -24,7 +24,7 @@ namespace PuzzleDefense
             //Color.DarkOrange,
             Color.BlueViolet,
             Color.Gold,
-            //Color.Gray, // Gem do nothing !
+            //Color.Gray,
             //Color.HotPink,
         ];
 
@@ -52,6 +52,8 @@ namespace PuzzleDefense
         float _ticRadius = 0;
 
         int _tempoDead = 32;
+
+        public Shake Shake = new();
 
         public Gem(Arena arena, Point mapPosition, Color color) 
         {
@@ -191,9 +193,9 @@ namespace PuzzleDefense
             if (indexLayer == (int)Game1.Layers.Main) 
             {
                 //batch.FilledCircle(Game1._texCircle, AbsXY, _radius + 2, Color.Black * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius, Color * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 8, Color * .75f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 16, Color * 1f);
+                batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius, Color * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius - 8, Color * .75f);
+                batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius - 16, Color * 1f);
                 
                 if (IsSelected)
                 {
@@ -211,7 +213,7 @@ namespace PuzzleDefense
             {
                 if (IsSameColor)
                 {
-                    batch.Circle(AbsXY, Radius / 2 + 4, 24, Color.White * 1f, 3f);
+                    batch.Circle(AbsXY + Shake.GetVector2(), Radius / 2 + 4, 24, Color.White * 1f, 3f);
                 }
                 //batch.CenterStringXY(Game1._fontMain, $"{(States)_state}", AbsXY, Color.White);
             }
