@@ -25,7 +25,7 @@ namespace PuzzleDefense
             Color.BlueViolet,
             Color.Gold,
             //Color.Gray, // Gem do nothing !
-            Color.HotPink,
+            //Color.HotPink,
         ];
 
         public Color Color;

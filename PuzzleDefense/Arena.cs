@@ -78,6 +78,8 @@ namespace PuzzleDefense
 
             SetSize(gridSize.ToVector2() * cellSize);
 
+            _cursorPos = _rect.Center;
+
             SetState((int)States.Play);
         }
         public bool IsIngrid(Point mapPosition)
@@ -446,8 +448,18 @@ namespace PuzzleDefense
                     if (CurGemOver.GetState() == (int)Gem.States.None &&
                         CurGemToSwap.GetState() == (int)Gem.States.None)
                     {
-                        ChangeState((int)States.ExploseGems);
-                        Game1._soundClick.Play(.5f * Game1.VolumeMaster, .05f, 0f);
+
+                        if (HasMatch3())
+                        {
+                            ChangeState((int)States.ExploseGems);
+                            //Game1._soundClick.Play(.5f * Game1.VolumeMaster, .05f, 0f);
+                        }
+                        else
+                        {
+                            // reSwap si pas de match 3
+                            SwapGem(CurGemOver, CurGemToSwap);
+                            ChangeState((int)States.Play);
+                        }
                     }
 
 
@@ -569,7 +581,7 @@ namespace PuzzleDefense
         {
             if (indexLayer == (int)Game1.Layers.Main)
             {
-                batch.FillRectangle(AbsRect, Color.Black * .75f);
+                batch.FillRectangle(AbsRect, Color.Black * .5f);
 
                 if (_state == (int)States.SwapGems)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.White * .5f);
