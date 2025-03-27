@@ -29,7 +29,7 @@ namespace PuzzleDefense
         ];
 
         public Color Color;
-        public static float Radius = 48;
+        public static float Radius = 40;
 
         public bool IsSelected = false;
         public bool IsSameColor = false;    // true if found some close gems with same color
@@ -51,7 +51,7 @@ namespace PuzzleDefense
         float _radius;
         float _ticRadius = 0;
 
-        int _tempoDead = 24;
+        int _tempoDead = 32;
 
         public Gem(Arena arena, Point mapPosition, Color color) 
         {
@@ -72,8 +72,10 @@ namespace PuzzleDefense
         }
         public void ExploseMe()
         {
-            new FxExplose(AbsXY, Color, 10, 40).AppendTo(_parent);
+            new FxExplose(AbsXY, Color, 20, 40).AppendTo(_parent);
             new PopInfo(NbSameColor.ToString(), Color.White, Color, 0, 32, 32).SetPosition(XY).AppendTo(_parent);
+
+            Game1._soundPop.Play(.4f * Game1.VolumeMaster, .5f, 0f);
 
             ChangeState((int)States.Dead);
         }
@@ -166,7 +168,7 @@ namespace PuzzleDefense
 
                     _ticRadius++;
 
-                    _radius = Easing.GetValue(Easing.BounceEaseOut, _ticRadius, Radius, 0, 24);
+                    _radius = Easing.GetValue(Easing.BounceEaseOut, _ticRadius, Radius, 0, 32);
 
                     break;
 
@@ -188,9 +190,10 @@ namespace PuzzleDefense
         {
             if (indexLayer == (int)Game1.Layers.Main) 
             {
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius, Color * .25f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 8, Color * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 16, Color * .75f);
+                //batch.FilledCircle(Game1._texCircle, AbsXY, _radius + 2, Color.Black * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius, Color * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 8, Color * .75f);
+                batch.FilledCircle(Game1._texCircle, AbsXY, _radius - 16, Color * 1f);
                 
                 if (IsSelected)
                 {

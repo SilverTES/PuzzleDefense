@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Mugen.Core;
@@ -29,9 +30,13 @@ namespace PuzzleDefense
         public static Texture2D _texCircle;
         public static Texture2D _texCursorA;
 
+        public static SoundEffect _soundClick;
+        public static SoundEffect _soundPop;
 
         public static SpriteFont _fontMain;
         public static SpriteFont _fontMedium;
+
+        public static float VolumeMaster = 1f;
 
         public Game1()
         {
@@ -65,6 +70,9 @@ namespace PuzzleDefense
 
             _fontMain = Content.Load<SpriteFont>("Fonts/fontMain");
             _fontMedium = Content.Load<SpriteFont>("Fonts/fontMedium");
+
+            _soundClick = Content.Load<SoundEffect>("Sounds/clock");
+            _soundPop = Content.Load<SoundEffect>("Sounds/pop");
         }
 
         protected override void Update(GameTime gameTime)
