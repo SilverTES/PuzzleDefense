@@ -71,6 +71,7 @@ namespace PuzzleDefense
 
         public const string A = "A";
         public const string B = "B";
+        public const string L = "L";
 
         public const string Up = "Up";
         public const string Down = "Down";
@@ -466,6 +467,8 @@ namespace PuzzleDefense
             _controller[A] = ButtonControl.OnPress(A + $"{_playerIndex}", _pad.Buttons.A == ButtonState.Pressed, 8);
             _controller[B] = ButtonControl.OnePress(B + $"{_playerIndex}", _pad.Buttons.B == ButtonState.Pressed);
 
+            _controller[L] = ButtonControl.OnePress(L + $"{_playerIndex}", _pad.Buttons.LeftShoulder == ButtonState.Pressed);
+
             //_controller[Up] = ButtonControl.OnPress(Up, _pad.DPad.Up == ButtonState.Pressed || _key.IsKeyDown(Keys.Up), 8);
             //_controller[Down] = ButtonControl.OnPress(Down, _pad.DPad.Down == ButtonState.Pressed || _key.IsKeyDown(Keys.Down), 8);
             //_controller[Left] = ButtonControl.OnPress(Left, _pad.DPad.Left == ButtonState.Pressed || _key.IsKeyDown(Keys.Left), 8);
@@ -626,6 +629,11 @@ namespace PuzzleDefense
             {
                 _cursorPos.X += _stick.X;
                 _cursorPos.Y += _stick.Y;
+            }
+
+            if (_controller[L])
+            {
+                Shuffle();
             }
 
             _cursorPos = Vector2.Clamp(_cursorPos, Vector2.One * (CellSize / 2), new Vector2(_rect.Width, _rect.Height) - CellSize / 2);

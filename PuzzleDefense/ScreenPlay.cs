@@ -33,6 +33,8 @@ namespace PuzzleDefense
             _divTop = new Container(Style.Space.One * 10, Style.Space.One * 10, Mugen.Physics.Position.HORIZONTAL);
             _divBottom = new Container(Style.Space.One * 10, Style.Space.One * 20, Mugen.Physics.Position.HORIZONTAL);
 
+            //Debug
+            _divTop.Insert(new Node().SetSize(800, 400));
 
             _divBottom.Insert(_arena[0]);
             _divBottom.Insert(_arena[1]);
