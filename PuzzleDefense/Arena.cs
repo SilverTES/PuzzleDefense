@@ -522,7 +522,7 @@ namespace PuzzleDefense
             {
                 if (HasMatch3())
                 {
-                    Misc.Log("Match 3 found ! explose them all !");
+                    //Misc.Log("Match 3 found ! explose them all !");
                     ChangeState((int)States.ExploseGems);
                 }
                 else
