@@ -77,7 +77,7 @@ namespace PuzzleDefense
             new FxExplose(AbsXY, Color, 20, 40).AppendTo(_parent);
             new PopInfo(NbSameColor.ToString(), Color.White, Color, 0, 32, 32).SetPosition(XY).AppendTo(_parent);
 
-            Game1._soundPop.Play(.4f * Game1.VolumeMaster, .5f, 0f);
+            Game1._soundPop.Play(.2f * Game1.VolumeMaster, .5f, 0f);
 
             ChangeState((int)States.Dead);
         }

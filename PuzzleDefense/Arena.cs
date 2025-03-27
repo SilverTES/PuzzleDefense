@@ -218,13 +218,13 @@ namespace PuzzleDefense
                     if (GetInGrid(x, y) == null) continue; // Ignorer les cases vides
 
                     Point pos = new Point(x, y);
-                    Point[] directions = new Point[]
-                    {
+                    Point[] directions =
+                    [
                     new Point(1, 0),  // Droite
                     new Point(-1, 0), // Gauche
                     new Point(0, 1),  // Bas
                     new Point(0, -1)  // Haut
-                    };
+                    ];
 
                     foreach (var dir in directions)
                     {
@@ -257,8 +257,8 @@ namespace PuzzleDefense
                     var gemRight1 = GetInGrid(x + 1, y);
                     var gemRight2 = GetInGrid(x + 2, y);
 
-                    if (gem != null && gemRight1 != null && gemRight2 != null)
-                        if (gem.Color == gemRight1.Color && gem.Color == gemRight2.Color)
+                    //if (gem != null && gemRight1 != null && gemRight2 != null)
+                        if (gem?.Color == gemRight1?.Color && gem?.Color == gemRight2?.Color)
                             return true;
                 }
             }
@@ -272,8 +272,8 @@ namespace PuzzleDefense
                     var gemDown1 = GetInGrid(x, y + 1);
                     var gemDown2 = GetInGrid(x, y + 2);
 
-                    if (gem != null && gemDown1 != null && gemDown2 != null)
-                        if (gem.Color == gemDown1.Color && gem.Color == gemDown2.Color)
+                    //if (gem != null && gemDown1 != null && gemDown2 != null)
+                        if (gem?.Color == gemDown1?.Color && gem?.Color == gemDown2?.Color)
                             return true;
                 }
             }
