@@ -15,6 +15,7 @@ namespace PuzzleDefense
             Swap,
             Dead,
         }
+        public State<States> State {  get; private set; } = new State<States>(States.None);
 
         static public Color[] Colors =
         [
@@ -69,8 +70,6 @@ namespace PuzzleDefense
 
             SetPosition(arena.MapPositionToVector2(mapPosition));
 
-            SetState((int)States.None);
-
         }
         public void ExploseMe()
         {
@@ -79,7 +78,7 @@ namespace PuzzleDefense
 
             Game1._soundPop.Play(.2f * Game1.VolumeMaster, .5f, 0f);
 
-            ChangeState((int)States.Dead);
+            State.Change(States.Dead);
         }
         public static Color RandomColor()
         {
@@ -96,7 +95,7 @@ namespace PuzzleDefense
             _from = _arena.MapPositionToVector2(MapPosition);
             _goal = _arena.MapPositionToVector2(goalPosition);
 
-            ChangeState((int)States.Move);
+            State.Change(States.Move);
             //Console.WriteLine("Gem Move Down");
         }
         public void SwapTo(Point goalPosition)
@@ -110,12 +109,12 @@ namespace PuzzleDefense
             _from = _arena.MapPositionToVector2(MapPosition);
             _goal = _arena.MapPositionToVector2(goalPosition);
 
-            ChangeState((int)States.Swap);
+            State.Change(States.Swap);
             //Console.WriteLine("Gem Move Down");
         }
-        protected override void RunState(GameTime gameTime)
+        private void RunState(GameTime gameTime)
         {
-            switch ((States)_state)
+            switch (State.CurState)
             {
                 case States.None:
 
@@ -134,7 +133,7 @@ namespace PuzzleDefense
 
                         MapPosition = GoalPosition;
 
-                        ChangeState((int)States.None);
+                        State.Change(States.None);
                         IsFinishMove = true;
                     }
 
@@ -153,7 +152,7 @@ namespace PuzzleDefense
 
                         MapPosition = GoalPosition;
 
-                        ChangeState((int)States.None);
+                        State.Change(States.None);
                         IsFinishMove = true;
                     }
 
@@ -177,8 +176,6 @@ namespace PuzzleDefense
                 default:
                     break;
             }
-
-            base.RunState(gameTime);
         }
         public override Node Update(GameTime gameTime)
         {

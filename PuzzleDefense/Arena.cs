@@ -24,7 +24,7 @@ namespace PuzzleDefense
             AddNewGemsToDown,
             Action,
         }
-
+        public State<States> State { get; private set; } = new State<States>(States.Play);
         public enum Timers
         {
             None,
@@ -44,7 +44,7 @@ namespace PuzzleDefense
         RectangleF _rectCursor;
 
         Vector2 _stick;
-        Point _swapDirection = new Point();
+        Point _swapDirection = new();
 
         Vector2 _offSetGem;
         public Gem CurGemOver;
@@ -104,8 +104,6 @@ namespace PuzzleDefense
             SetSize(gridSize.ToVector2() * cellSize);
 
             _cursorPos = _rect.Center;
-
-            SetState((int)States.Play);
 
             _timers.Set(Timers.Help, Timer.Time(0, 0, 5), true);
             _timers.Start(Timers.Help);
@@ -581,7 +579,7 @@ namespace PuzzleDefense
                 if (HasMatch3())
                 {
                     //Misc.Log("Match 3 found ! explose them all !");
-                    ChangeState((int)States.ExploseGems);
+                    State.Change(States.ExploseGems);
                 }
                 else
                 {
@@ -602,7 +600,7 @@ namespace PuzzleDefense
                             Game1._soundClick.Play(.5f * Game1.VolumeMaster, .1f, 0f);
 
                             _offSetGem = _cursorPos - CurGemOver.XY;
-                            ChangeState((int)States.SelectGemToSwap);
+                            State.Change(States.SelectGemToSwap);
                         }
                     }
                 }
@@ -631,8 +629,8 @@ namespace PuzzleDefense
                     gemHelperA = GetInGrid(result[0].GemPosition);
                     gemHelperB = GetInGrid(result[0].SwapPosition);
 
-                    gemHelperA.Shake.SetIntensity(3, .01f);
-                    gemHelperB.Shake.SetIntensity(3, .01f);
+                    gemHelperA.Shake.SetIntensity(3,  .01f);
+                    gemHelperB.Shake.SetIntensity(3,  .01f);
                 }
 
                 _showHelper = 240;
@@ -647,7 +645,7 @@ namespace PuzzleDefense
             if (!_control.Is(Buttons.A))
             {
                 _timers.Start(Timers.Help);
-                ChangeState((int)States.Play);
+                State.Change(States.Play);
             }
 
             _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
@@ -670,7 +668,7 @@ namespace PuzzleDefense
                     if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
                     {
                         SwapGem(CurGemOver, CurGemToSwap);
-                        ChangeState((int)States.SwapGems);
+                        State.Change(States.SwapGems);
 
                         //if (!_isCombo)
                         //{
@@ -685,13 +683,13 @@ namespace PuzzleDefense
         {
             _cursorPos = CurGemOver.XY + _offSetGem;
 
-            if (CurGemOver.GetState() == (int)Gem.States.None &&
-                CurGemToSwap.GetState() == (int)Gem.States.None)
+            if (CurGemOver.State.CurState == Gem.States.None &&
+                CurGemToSwap.State.CurState == Gem.States.None)
             {
 
                 if (HasMatch3())
                 {
-                    ChangeState((int)States.ExploseGems);
+                    State.Change(States.ExploseGems);
                     Game1._soundClick.Play(.5f * Game1.VolumeMaster, .05f, 0f);
                 }
                 else
@@ -700,13 +698,13 @@ namespace PuzzleDefense
                     SwapGem(CurGemOver, CurGemToSwap);
 
                     _timers.Start(Timers.Help);
-                    ChangeState((int)States.Play);
+                    State.Change(States.Play);
                 }
             }
         }
-        protected override void RunState(GameTime gameTime)
+        private void RunState(GameTime gameTime)
         {
-            switch ((States)_state)
+            switch (State.CurState)
             {
                 case States.Play:
 
@@ -731,35 +729,33 @@ namespace PuzzleDefense
                     int nbExplosed = ExploseGems();
                     _barCombo.AddValue(nbExplosed * 1);
 
-                    ChangeState((int)States.PushGemsToDown);
+                    State.Change(States.PushGemsToDown);
 
                     break;
 
                 case States.PushGemsToDown:
 
                     PushGemsToDown();
-                    ChangeState((int)States.AddNewGemsToDown);
+                    State.Change(States.AddNewGemsToDown);
                     break;
 
                 case States.AddNewGemsToDown:
 
                     AddNewGemsToDown();
-                    ChangeState((int)States.Action);
+                    State.Change(States.Action);
 
                     break;
 
                 case States.Action:
 
                     _timers.Start(Timers.Help);
-                    ChangeState((int)States.Play);
+                    State.Change(States.Play);
 
                     break;
 
                 default:
                     break;
             }
-
-            base.RunState(gameTime);
         }
         #endregion
 
@@ -785,10 +781,10 @@ namespace PuzzleDefense
             {
                 batch.FillRectangle(AbsRect, Color.Black * .5f);
 
-                if (_state == (int)States.SelectGemToSwap)
+                if (State.CurState == States.SelectGemToSwap)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.White * .5f);
 
-                if (_state == (int)States.Play)
+                if (State.CurState == (int)States.Play)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.Black * .5f);
 
                 if (_showHelper > 0 && IsAllGemsFinishMove())
@@ -833,7 +829,7 @@ namespace PuzzleDefense
             if (indexLayer == (int)Game1.Layers.Debug) 
             {
                 batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_easeScore.Value}", AbsRectF.TopCenter - Vector2.UnitY * 32, Color.Yellow);
-                batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {_mapCursor}", AbsRectF.BottomCenter, Color.White);
+                batch.CenterStringXY(Game1._fontMain, $"{State.CurState} : {_mapCursor}", AbsRectF.BottomCenter, Color.White);
 
                 //if (CurGemOver != null)
                 //    batch.Line(CurGemOver.AbsXY, CurGemOver.AbsXY + _stick * 5, Color.White, 8);
