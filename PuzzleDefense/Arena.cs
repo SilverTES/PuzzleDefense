@@ -30,7 +30,7 @@ namespace PuzzleDefense
             None,
             Help,
         }
-        TimerEvent _timers;
+        private readonly Timer<Timers> _timers = new();
 
         public Point GridSize { get; private set; }
         public Vector2 CellSize { get; private set; }
@@ -63,30 +63,23 @@ namespace PuzzleDefense
         }
 
 
-        int _score = 0;
-        //private List<Gem> _matchedGems; // Liste des positions des gemmes matchées
+        private int _score = 0;
 
-        GamePadState _pad;
-        KeyboardState _key;
+        private GamePadState _pad;
+        private KeyboardState _key;
 
-        public const string A = "A";
-        public const string B = "B";
-        public const string L = "L";
-
-        public const string Up = "Up";
-        public const string Down = "Down";
-        public const string Left = "Left";
-        public const string Right = "Right";
-
-        Dictionary<string, bool> _controller = new Dictionary<string, bool>()
+        public enum Buttons
         {
-            { A, false },
-            { B, false },
-            { Up, false },
-            { Down, false },
-            { Left, false },
-            { Right, false },
-        };
+            A,
+            B,
+            L,
+            R,
+            Up,
+            Down,
+            Left,
+            Right,
+        }
+        Control<Buttons> _control = new();
 
         public Arena(Point gridSize, Vector2 cellSize, PlayerIndex playerIndex) 
         { 
@@ -103,11 +96,18 @@ namespace PuzzleDefense
 
             SetState((int)States.Play);
 
-            _timers = new TimerEvent(Enums.Count<Timers>());
+            _timers.Set(Timers.Help, Timer.Time(0, 0, 3), true);
+            _timers.Start(Timers.Help);
+        }
 
-            _timers.SetTimer((int)Timers.Help, TimerEvent.Time(0, 0, 3), true);
-            _timers.StartTimer((int)Timers.Help);
-
+        #region Grid Management
+        public Vector2 MapPositionToVector2(Point mapPosition)
+        {
+            return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;
+        }
+        public Point Vector2ToMapPosition(Vector2 position)
+        {
+            return new Point((int)Math.Floor(position.X / CellSize.X), (int)Math.Floor(position.Y / CellSize.Y));
         }
         public bool IsIngrid(Point mapPosition)
         {
@@ -180,6 +180,9 @@ namespace PuzzleDefense
                 }
             }
         }
+        #endregion
+
+        #region Gems Management
         // Obtenir une couleur qui ne crée pas de match-3
         private Color GetSafeColor(int x, int y)
         {
@@ -281,17 +284,13 @@ namespace PuzzleDefense
 
             return false;
         }
-        private bool IsValidPosition(int x, int y)
-        {
-            return x >= 0 && x < _grid.Width && y >= 0 && y < _grid.Height;
-        }
         // Prédire si un swap crée un match-3
         private bool WillCreateMatch(Point pos1, Point pos2)
         {
             int x1 = (int)pos1.X, y1 = (int)pos1.Y;
             int x2 = (int)pos2.X, y2 = (int)pos2.Y;
 
-            if (!IsValidPosition(x1, y1) || !IsValidPosition(x2, y2) ||
+            if (!IsIngrid(x1, y1) || !IsIngrid(x2, y2) ||
                 (Math.Abs(x1 - x2) + Math.Abs(y1 - y2) != 1))
                 return false;
 
@@ -451,44 +450,6 @@ namespace PuzzleDefense
                 }
             }
         }
-        public Vector2 MapPositionToVector2(Point mapPosition)
-        {
-            return new Vector2(mapPosition.X * CellSize.X, mapPosition.Y * CellSize.Y) + CellSize / 2;
-        }
-        public Point Vector2ToMapPosition(Vector2 position)
-        {
-            return new Point((int)Math.Floor(position.X / CellSize.X), (int)Math.Floor(position.Y / CellSize.Y));
-        }
-        private void HandleInput()
-        {
-            _key = Keyboard.GetState();
-            _pad = GamePad.GetState(_playerIndex);
-
-            _controller[A] = ButtonControl.OnPress(A + $"{_playerIndex}", _pad.Buttons.A == ButtonState.Pressed, 8);
-            _controller[B] = ButtonControl.OnePress(B + $"{_playerIndex}", _pad.Buttons.B == ButtonState.Pressed);
-
-            _controller[L] = ButtonControl.OnePress(L + $"{_playerIndex}", _pad.Buttons.LeftShoulder == ButtonState.Pressed);
-
-            //_controller[Up] = ButtonControl.OnPress(Up, _pad.DPad.Up == ButtonState.Pressed || _key.IsKeyDown(Keys.Up), 8);
-            //_controller[Down] = ButtonControl.OnPress(Down, _pad.DPad.Down == ButtonState.Pressed || _key.IsKeyDown(Keys.Down), 8);
-            //_controller[Left] = ButtonControl.OnPress(Left, _pad.DPad.Left == ButtonState.Pressed || _key.IsKeyDown(Keys.Left), 8);
-            //_controller[Right] = ButtonControl.OnPress(Right, _pad.DPad.Right == ButtonState.Pressed || _key.IsKeyDown(Keys.Right), 8);
-
-            //if (_controller[Up]) _mapCursor.Y += -1;
-            //if (_controller[Down]) _mapCursor.Y += 1;
-            //if (_controller[Left]) _mapCursor.X += -1;
-            //if (_controller[Right]) _mapCursor.X += 1;
-
-            //_rectCursor.Position = _mapCursor.ToVector2() * CellSize;
-
-            _stick.X = _pad.ThumbSticks.Left.X * 10;
-            _stick.Y = _pad.ThumbSticks.Left.Y * -10;
-
-        }
-        public bool IsStickMove()
-        {
-            return Math.Abs(_stick.X) > 0 || Math.Abs(_stick.Y) > 0;
-        }
         public bool SwapGem(Gem gemA, Gem gemB)
         {
             if (gemA == null || gemB == null)
@@ -508,7 +469,7 @@ namespace PuzzleDefense
             for (int i = 0; i < gems.Count; i++)
             {
                 var gem = gems[i];
-                if (gem == null) 
+                if (gem == null)
                     continue;
 
                 if (gem.IsFinishMove == false)
@@ -516,6 +477,132 @@ namespace PuzzleDefense
             }
 
             return true;
+        }
+        #endregion
+
+        #region Gameplay
+        private bool IsPlayerOne()
+        {
+            return _playerIndex == PlayerIndex.One;
+        }
+        private void HandleInput()
+        {
+            _key = Game1.Key;
+            _pad = GamePad.GetState(_playerIndex);
+
+            _control.On(Buttons.A, _pad.Buttons.A == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.LeftControl), 8);
+            _control.Once(Buttons.B, _pad.Buttons.B == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.LeftAlt));
+
+            _control.Once(Buttons.L, _pad.Buttons.LeftShoulder == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.LeftShift));
+            _control.On(Buttons.R, _pad.Buttons.RightShoulder == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.RightShift));
+
+            _control.On(Buttons.Up, _pad.DPad.Up == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Up), 8);
+            _control.On(Buttons.Down, _pad.DPad.Down == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Down), 8);
+            _control.On(Buttons.Left, _pad.DPad.Left == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Left), 8);
+            _control.On(Buttons.Right, _pad.DPad.Right == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Right), 8);
+
+            _stick.X = _pad.ThumbSticks.Left.X * 10;
+            _stick.Y = _pad.ThumbSticks.Left.Y * -10;
+        }
+        public bool IsStickMove()
+        {
+            return Math.Abs(_stick.X) > 0 || Math.Abs(_stick.Y) > 0;
+        }
+        private void Play()
+        {
+            _prevMapCursor = _mapCursor;
+
+            if (!_control.Is(Buttons.A))
+            {
+                _cursorPos.X += _stick.X;
+                _cursorPos.Y += _stick.Y;
+
+                if (_control.On(Buttons.Up)) { _mapCursor.Y += -1; _cursorPos = MapPositionToVector2(_mapCursor); }
+                if (_control.On(Buttons.Down)) {_mapCursor.Y += 1; _cursorPos = MapPositionToVector2(_mapCursor); }
+                if (_control.On(Buttons.Left)) {_mapCursor.X += -1; _cursorPos = MapPositionToVector2(_mapCursor); }
+                if (_control.On(Buttons.Right)) {_mapCursor.X += 1; _cursorPos = MapPositionToVector2(_mapCursor); }
+            }
+
+            if (_control.Once(Buttons.L))
+            {
+                Shuffle();
+            }
+
+            _cursorPos = Vector2.Clamp(_cursorPos, Vector2.One * (CellSize / 2), new Vector2(_rect.Width, _rect.Height) - CellSize / 2);
+
+            _mapCursor = Vector2ToMapPosition(_cursorPos);
+
+            _mapCursor.X = int.Clamp(_mapCursor.X, 0, GridSize.X - 1);
+            _mapCursor.Y = int.Clamp(_mapCursor.Y, 0, GridSize.Y - 1);
+
+            _rectCursor.Position = Vector2ToMapPosition(_cursorPos).ToVector2() * CellSize;
+
+            _rectCursor.Width = CellSize.X;
+            _rectCursor.Height = CellSize.Y;
+
+            if (_mapCursor != _prevMapCursor)
+                Game1._soundClick.Play(.5f * Game1.VolumeMaster, 1f, 0f);
+
+            if (IsAllGemsFinishMove())
+            {
+                if (HasMatch3())
+                {
+                    //Misc.Log("Match 3 found ! explose them all !");
+                    ChangeState((int)States.ExploseGems);
+                }
+                else
+                {
+                    var prevGem = GetInGrid(_prevMapCursor);
+                    if (prevGem != null)
+                        prevGem.IsSelected = false;
+
+                    CurGemOver = GetInGrid(_mapCursor);
+                    if (CurGemOver != null)
+                        CurGemOver.IsSelected = true;
+
+
+                    if (_control.On(Buttons.A))
+                    {
+                        //Misc.Log("A pressed");
+                        if (CurGemOver != null)
+                        {
+                            Game1._soundClick.Play(.5f * Game1.VolumeMaster, .1f, 0f);
+
+                            _offSetGem = _cursorPos - CurGemOver.XY;
+                            ChangeState((int)States.SelectGemToSwap);
+                        }
+                    }
+                }
+            }
+
+            // Si le stick ne bouge pas alors on attire le curseur sur le CurGemOver
+            if (!IsStickMove())
+            {
+                if (_offSetGem.Length() < Gem.Radius)
+                {
+                    _offSetGem /= 1.5f;
+                    _cursorPos = MapPositionToVector2(_mapCursor) + _offSetGem;
+                }
+            }
+            else
+            {
+                _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
+            }
+
+            if (_timers.On(Timers.Help))
+            {
+                var result = FindPotentialMatches();
+
+                if (result.Count > 0)
+                {
+                    var gemA = GetInGrid(result[0].GemPosition);
+                    var gemB = GetInGrid(result[0].SwapPosition);
+
+                    gemA.Shake.SetIntensity(3, .01f);
+                    gemB.Shake.SetIntensity(3, .01f);
+                }
+            }
+
         }
         protected override void RunState(GameTime gameTime)
         {
@@ -543,11 +630,16 @@ namespace PuzzleDefense
 
                 case States.SelectGemToSwap:
 
-                    if (_pad.Buttons.A == ButtonState.Released)
+                    if (!_control.Is(Buttons.A))
                         ChangeState((int)States.Play);
 
                     _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
                     _swapDirection.Y = _stick.Y > 0 ? 1 : _stick.Y < 0 ? -1 : 0;
+
+                    if (_control.On(Buttons.Up)) _swapDirection.Y = -1;
+                    if (_control.On(Buttons.Down)) _swapDirection.Y = 1;
+                    if (_control.On(Buttons.Left)) _swapDirection.X = -1;
+                    if (_control.On(Buttons.Right)) _swapDirection.X = 1;
 
                     if (Math.Abs(_swapDirection.X) > 0 && Math.Abs(_swapDirection.Y) > 0) 
                         _swapDirection = Point.Zero;
@@ -557,7 +649,8 @@ namespace PuzzleDefense
                     {
                         if (CurGemToSwap != CurGemOver)
                         {
-                            //if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
+                            // Autorise le swap seulement si il y a un match possible après !
+                            if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
                             {
                                 SwapGem(CurGemOver, CurGemToSwap);
                                 ChangeState((int)States.SwapGems);
@@ -623,93 +716,8 @@ namespace PuzzleDefense
 
             base.RunState(gameTime);
         }
-        private void Play()
-        {
-            if (_pad.Buttons.A == ButtonState.Released)
-            {
-                _cursorPos.X += _stick.X;
-                _cursorPos.Y += _stick.Y;
-            }
+        #endregion
 
-            if (_controller[L])
-            {
-                Shuffle();
-            }
-
-            _cursorPos = Vector2.Clamp(_cursorPos, Vector2.One * (CellSize / 2), new Vector2(_rect.Width, _rect.Height) - CellSize / 2);
-
-            _prevMapCursor = _mapCursor;
-            _mapCursor = Vector2ToMapPosition(_cursorPos);
-
-            _rectCursor.Position = Vector2ToMapPosition(_cursorPos).ToVector2() * CellSize;
-
-            _rectCursor.Width = CellSize.X;
-            _rectCursor.Height = CellSize.Y;
-
-            if (_mapCursor != _prevMapCursor)
-                Game1._soundClick.Play(.5f * Game1.VolumeMaster, 1f, 0f);
-
-            if (IsAllGemsFinishMove())
-            {
-                if (HasMatch3())
-                {
-                    //Misc.Log("Match 3 found ! explose them all !");
-                    ChangeState((int)States.ExploseGems);
-                }
-                else
-                {
-                    var prevGem = GetInGrid(_prevMapCursor);
-                    if (prevGem != null)
-                        prevGem.IsSelected = false;
-
-                    CurGemOver = GetInGrid(_mapCursor);
-                    if (CurGemOver != null)
-                        CurGemOver.IsSelected = true;
-
-
-                    if (_controller[A])
-                    {
-                        //Misc.Log("A pressed");
-                        if (CurGemOver != null)
-                        {
-                            Game1._soundClick.Play(.5f * Game1.VolumeMaster, .1f, 0f);
-
-                            _offSetGem = _cursorPos - CurGemOver.XY;
-                            ChangeState((int)States.SelectGemToSwap);
-                        }
-                    }
-                }
-            }
-
-            // Si le stick ne bouge pas alors on attire le curseur sur le CurGemOver
-            if (!IsStickMove())
-            {
-                if (_offSetGem.Length() < Gem.Radius)
-                {
-                    _offSetGem /= 1.5f;
-                    _cursorPos = MapPositionToVector2(_mapCursor) + _offSetGem;
-                }
-            }
-            else
-            {
-                _offSetGem = _cursorPos - MapPositionToVector2(_mapCursor);
-            }
-
-            if (_timers.OnTimer((int)Timers.Help))
-            {
-                var result = FindPotentialMatches();
-
-                if (result.Count > 0)
-                {
-                    var gemA = GetInGrid(result[0].GemPosition);
-                    var gemB = GetInGrid(result[0].SwapPosition);
-
-                    gemA.Shake.SetIntensity(3, .01f);
-                    gemB.Shake.SetIntensity(3, .01f);
-                }
-            }
-
-        }
         public override Node Update(GameTime gameTime)
         {
             _timers.Update();
@@ -762,7 +770,7 @@ namespace PuzzleDefense
             if (indexLayer == (int)Game1.Layers.Debug) 
             {
                 batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_score}", AbsRectF.TopCenter, Color.Yellow);
-                batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {HasMatch3()}", AbsRectF.BottomCenter, Color.White);
+                batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {_mapCursor}", AbsRectF.BottomCenter, Color.White);
 
                 //if (CurGemOver != null)
                 //    batch.Line(CurGemOver.AbsXY, CurGemOver.AbsXY + _stick * 5, Color.White, 8);
@@ -782,7 +790,6 @@ namespace PuzzleDefense
                         //batch.CenterStringXY(Game1._fontMain, $"{type}", AbsXY + pos, Color.White * .75f);
                     }
                 }
-
             }
 
             DrawChilds(batch, gameTime, indexLayer);

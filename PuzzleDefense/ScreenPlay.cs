@@ -50,8 +50,8 @@ namespace PuzzleDefense
             _arena[1].InitGrid();
             _arena[2].InitGrid();
 
-            Misc.Log($"_arena[0] Has Match 3 ? {_arena[0].HasMatch3()}");
-            Misc.Log($"_arena[1] Has Match 3 ? {_arena[1].HasMatch3()}");
+            //Misc.Log($"_arena[0] Has Match 3 ? {_arena[0].HasMatch3()}");
+            //Misc.Log($"_arena[1] Has Match 3 ? {_arena[1].HasMatch3()}");
 
         }
         public override Node Update(GameTime gameTime)
@@ -59,11 +59,11 @@ namespace PuzzleDefense
             _key = Game1.Key;
             _mousePos = WindowManager.GetMousePosition();
 
-            if (ButtonControl.OnePress("Shuffle", _key.IsKeyDown(Keys.F5)))
-            {
-                _arena[0].Shuffle();
-                _arena[1].Shuffle();
-            }
+            //if (ButtonControl.OnePress("Shuffle", _key.IsKeyDown(Keys.F5)))
+            //{
+            //    _arena[0].Shuffle();
+            //    _arena[1].Shuffle();
+            //}
 
             UpdateChilds(gameTime);
 
