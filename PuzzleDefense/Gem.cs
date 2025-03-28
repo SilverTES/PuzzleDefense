@@ -192,8 +192,8 @@ namespace PuzzleDefense
         {
             if (indexLayer == (int)Game1.Layers.Main) 
             {
-                batch.FilledCircle(Game1._texCircle, AbsXY + Vector2.One * 4f, _radius, Color.Black * .5f);
-                batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius, Color * .5f);
+                //batch.FilledCircle(Game1._texCircle, AbsXY + Vector2.One * 4f, _radius, Color.Black * .5f);
+                batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius, Color.Lerp(Color * .5f, Color.Black, .75f));
                 batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius - 8, Color * .75f);
                 batch.FilledCircle(Game1._texCircle, AbsXY + Shake.GetVector2(), _radius - 16, Color * 1f);
                 

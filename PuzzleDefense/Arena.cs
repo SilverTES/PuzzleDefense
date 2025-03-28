@@ -50,6 +50,11 @@ namespace PuzzleDefense
         public Gem CurGemOver;
         public Gem CurGemToSwap;
 
+        Gem gemHelperA;
+        Gem gemHelperB;
+
+        int _showHelper = 100;
+
         public class SwapCandidate
         {
             public Point GemPosition { get; set; } // Position de la gemme candidate
@@ -84,8 +89,10 @@ namespace PuzzleDefense
         // Points
         private int _score = 0;
         ProgressBar _barCombo;
-        bool _isCombo = false;
+        //bool _isCombo = false;
         int _multiplier = 0;
+
+        Addon.Loop _loop;
 
         public Arena(Point gridSize, Vector2 cellSize, PlayerIndex playerIndex) 
         { 
@@ -102,11 +109,16 @@ namespace PuzzleDefense
 
             SetState((int)States.Play);
 
-            _timers.Set(Timers.Help, Timer.Time(0, 0, 3), true);
+            _timers.Set(Timers.Help, Timer.Time(0, 0, 5), true);
             _timers.Start(Timers.Help);
 
             var nbMultiplier = 4;
             _barCombo = new ProgressBar(0, nbMultiplier * 10, 240, 12, Color.GreenYellow, Color.Red, Color.Black, 2f, nbMultiplier, Position.CENTER);
+
+            _loop = new Addon.Loop(this);
+            _loop.SetLoop(0, 0, 1f, .1f, Mugen.Animation.Loops.PINGPONG);
+            _loop.Start();
+            AddAddon(_loop);
         }
 
         #region Grid Management
@@ -494,6 +506,10 @@ namespace PuzzleDefense
         #endregion
 
         #region Gameplay
+        public void ResetScore()
+        {
+            _score = 0;
+        }
         private bool IsPlayerOne()
         {
             return _playerIndex == PlayerIndex.One;
@@ -509,10 +525,10 @@ namespace PuzzleDefense
             _control.Once(Buttons.L, _pad.Buttons.LeftShoulder == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.LeftShift));
             _control.On(Buttons.R, _pad.Buttons.RightShoulder == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.RightShift));
 
-            _control.On(Buttons.Up, _pad.DPad.Up == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Up), 8);
-            _control.On(Buttons.Down, _pad.DPad.Down == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Down), 8);
-            _control.On(Buttons.Left, _pad.DPad.Left == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Left), 8);
-            _control.On(Buttons.Right, _pad.DPad.Right == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Right), 8);
+            _control.On(Buttons.Up, _pad.DPad.Up == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Up), 5);
+            _control.On(Buttons.Down, _pad.DPad.Down == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Down), 5);
+            _control.On(Buttons.Left, _pad.DPad.Left == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Left), 5);
+            _control.On(Buttons.Right, _pad.DPad.Right == ButtonState.Pressed || IsPlayerOne() && _key.IsKeyDown(Keys.Right), 5);
 
             _stick.X = _pad.ThumbSticks.Left.X * 10;
             _stick.Y = _pad.ThumbSticks.Left.Y * -10;
@@ -608,19 +624,27 @@ namespace PuzzleDefense
 
                 if (result.Count > 0)
                 {
-                    var gemA = GetInGrid(result[0].GemPosition);
-                    var gemB = GetInGrid(result[0].SwapPosition);
+                    gemHelperA = GetInGrid(result[0].GemPosition);
+                    gemHelperB = GetInGrid(result[0].SwapPosition);
 
-                    gemA.Shake.SetIntensity(3, .01f);
-                    gemB.Shake.SetIntensity(3, .01f);
+                    gemHelperA.Shake.SetIntensity(3, .01f);
+                    gemHelperB.Shake.SetIntensity(3, .01f);
                 }
+
+                _showHelper = 240;
             }
+
+            _showHelper--;
+            if (_showHelper < 0) _showHelper = 0;
 
         }
         private void SelectGemToSwap()
         {
             if (!_control.Is(Buttons.A))
+            {
+                _timers.Start(Timers.Help);
                 ChangeState((int)States.Play);
+            }
 
             _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
             _swapDirection.Y = _stick.Y > 0 ? 1 : _stick.Y < 0 ? -1 : 0;
@@ -644,11 +668,11 @@ namespace PuzzleDefense
                         SwapGem(CurGemOver, CurGemToSwap);
                         ChangeState((int)States.SwapGems);
 
-                        if (!_isCombo)
-                        {
-                            _isCombo = true;
-                            //_barCombo.SetValue(_barCombo.MaxValue);
-                        }
+                        //if (!_isCombo)
+                        //{
+                        //    _isCombo = true;
+                        //    //_barCombo.SetValue(_barCombo.MaxValue);
+                        //}
                     }
                 }
             }
@@ -670,6 +694,8 @@ namespace PuzzleDefense
                 {
                     // reSwap si pas de match 3
                     SwapGem(CurGemOver, CurGemToSwap);
+
+                    _timers.Start(Timers.Help);
                     ChangeState((int)States.Play);
                 }
             }
@@ -720,6 +746,7 @@ namespace PuzzleDefense
 
                 case States.Action:
 
+                    _timers.Start(Timers.Help);
                     ChangeState((int)States.Play);
 
                     break;
@@ -740,14 +767,14 @@ namespace PuzzleDefense
 
             RunState(gameTime);
 
-            if (_isCombo)
+            //if (_isCombo)
             {
-                _barCombo.SetValue(_barCombo.Value - .1f);
+                _barCombo.SetValue(_barCombo.Value - .05f);
 
-                if (_barCombo.Value <= 0)
-                {
-                    _isCombo = false;
-                }
+                //if (_barCombo.Value <= 0)
+                //{
+                //    _isCombo = false;
+                //}
 
                 _multiplier = (int)(_barCombo.Value/ 10) + 1;
             }
@@ -768,6 +795,14 @@ namespace PuzzleDefense
                 if (_state == (int)States.Play)
                     batch.FillRectangle(_rectCursor.Translate(AbsXY).Extend(-4f), Color.Black * .5f);
 
+                if (_showHelper > 0 && IsAllGemsFinishMove())
+                {
+                    if (gemHelperA !=  null && gemHelperB != null)
+                    {
+                        if (WillCreateMatch(gemHelperA.MapPosition, gemHelperB.MapPosition))
+                            batch.LineTexture(Game1._texLine, gemHelperA.AbsXY, gemHelperB.AbsXY, 25, Color.White * .5f * _loop._current);
+                    }
+                }
 
 
 

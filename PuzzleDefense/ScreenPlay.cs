@@ -34,7 +34,7 @@ namespace PuzzleDefense
             _divBottom = new Container(Style.Space.One * 10, Style.Space.One * 20, Mugen.Physics.Position.HORIZONTAL);
 
             //Debug
-            _divTop.Insert(new Node().SetSize(800, 400));
+            _divTop.Insert(new Node().SetSize(800, 200));
 
             _divBottom.Insert(_arena[0]);
             _divBottom.Insert(_arena[1]);
@@ -59,6 +59,13 @@ namespace PuzzleDefense
             _key = Game1.Key;
             _mousePos = WindowManager.GetMousePosition();
 
+            if (ButtonControl.OnePress("Reset", _key.IsKeyDown(Keys.F1)))
+            {
+                for (int i = 0; i < _arena.Length; i++)
+                {
+                    _arena[i].ResetScore();
+                }
+            }
             //if (ButtonControl.OnePress("Shuffle", _key.IsKeyDown(Keys.F5)))
             //{
             //    _arena[0].Shuffle();
