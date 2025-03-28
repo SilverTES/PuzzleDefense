@@ -63,7 +63,6 @@ namespace PuzzleDefense
         }
 
 
-        private int _score = 0;
 
         private GamePadState _pad;
         private KeyboardState _key;
@@ -80,6 +79,13 @@ namespace PuzzleDefense
             Right,
         }
         Control<Buttons> _control = new();
+
+
+        // Points
+        private int _score = 0;
+        ProgressBar _barCombo;
+        bool _isCombo = false;
+        int _multiplier = 0;
 
         public Arena(Point gridSize, Vector2 cellSize, PlayerIndex playerIndex) 
         { 
@@ -98,6 +104,9 @@ namespace PuzzleDefense
 
             _timers.Set(Timers.Help, Timer.Time(0, 0, 3), true);
             _timers.Start(Timers.Help);
+
+            var nbMultiplier = 4;
+            _barCombo = new ProgressBar(0, nbMultiplier * 10, 240, 12, Color.GreenYellow, Color.Red, Color.Black, 2f, nbMultiplier, Position.CENTER);
         }
 
         #region Grid Management
@@ -166,6 +175,7 @@ namespace PuzzleDefense
         {
             ClearGrid();
             InitGrid();
+            //AddNewGemsToDown();
         }
         public void InitGrid()
         {
@@ -392,16 +402,18 @@ namespace PuzzleDefense
 
             return matchedGems;
         }
-        public void ExploseGems()
+        public int ExploseGems()
         {
             var gems = FindMatches();
             foreach (var gem in gems)
             {
                 gem.NbSameColor = gems.Count;
+                _score += _multiplier;
+
                 gem.ExploseMe();
                 DeleteInGrid(gem);
-                _score++;
             }
+            return gems.Count;
         }
         public void PushGemsToDown()
         {
@@ -441,7 +453,8 @@ namespace PuzzleDefense
                 {
                     if (_grid.Get(col, row) == null)
                     {
-                        var gem = AddInGrid(new Point(col, -1), Gem.RandomColor());
+                        //var gem = AddInGrid(new Point(col, -1), Gem.RandomColor());
+                        var gem = AddInGrid(new Point(col, -1), GetSafeColor(col, -1));
                         
                         if (gem != null)
                             gem.MoveTo(new Point(col, row));
@@ -604,6 +617,63 @@ namespace PuzzleDefense
             }
 
         }
+        private void SelectGemToSwap()
+        {
+            if (!_control.Is(Buttons.A))
+                ChangeState((int)States.Play);
+
+            _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
+            _swapDirection.Y = _stick.Y > 0 ? 1 : _stick.Y < 0 ? -1 : 0;
+
+            if (_control.On(Buttons.Up)) _swapDirection.Y = -1;
+            if (_control.On(Buttons.Down)) _swapDirection.Y = 1;
+            if (_control.On(Buttons.Left)) _swapDirection.X = -1;
+            if (_control.On(Buttons.Right)) _swapDirection.X = 1;
+
+            if (Math.Abs(_swapDirection.X) > 0 && Math.Abs(_swapDirection.Y) > 0) 
+                _swapDirection = Point.Zero;
+
+            CurGemToSwap = GetInGrid(_mapCursor + _swapDirection);
+            if (CurGemToSwap != null)
+            {
+                if (CurGemToSwap != CurGemOver)
+                {
+                    // Autorise le swap seulement si il y a un match possible après !
+                    if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
+                    {
+                        SwapGem(CurGemOver, CurGemToSwap);
+                        ChangeState((int)States.SwapGems);
+
+                        if (!_isCombo)
+                        {
+                            _isCombo = true;
+                            //_barCombo.SetValue(_barCombo.MaxValue);
+                        }
+                    }
+                }
+            }
+        }
+        private void SwapGems()
+        {
+            _cursorPos = CurGemOver.XY + _offSetGem;
+
+            if (CurGemOver.GetState() == (int)Gem.States.None &&
+                CurGemToSwap.GetState() == (int)Gem.States.None)
+            {
+
+                if (HasMatch3())
+                {
+                    ChangeState((int)States.ExploseGems);
+                    Game1._soundClick.Play(.5f * Game1.VolumeMaster, .05f, 0f);
+                }
+                else
+                {
+                    // reSwap si pas de match 3
+                    SwapGem(CurGemOver, CurGemToSwap);
+                    ChangeState((int)States.Play);
+                }
+            }
+        }
         protected override void RunState(GameTime gameTime)
         {
             switch ((States)_state)
@@ -612,81 +682,25 @@ namespace PuzzleDefense
 
                     Play();
 
-                    #region Debug
-                    //var gems = GroupOf<Gem>();
-                    //foreach (var gem in gems)
-                    //{
-                    //    gem.IsSameColor = false;
-                    //}
-
-                    //gems = FindMatches();
-                    //foreach (var gem in gems)
-                    //{
-                    //    gem.IsSameColor = true;
-                    //}
-                    #endregion
-
                     break;
 
                 case States.SelectGemToSwap:
 
-                    if (!_control.Is(Buttons.A))
-                        ChangeState((int)States.Play);
-
-                    _swapDirection.X = _stick.X > 0 ? 1 : _stick.X < 0 ? -1 : 0;
-                    _swapDirection.Y = _stick.Y > 0 ? 1 : _stick.Y < 0 ? -1 : 0;
-
-                    if (_control.On(Buttons.Up)) _swapDirection.Y = -1;
-                    if (_control.On(Buttons.Down)) _swapDirection.Y = 1;
-                    if (_control.On(Buttons.Left)) _swapDirection.X = -1;
-                    if (_control.On(Buttons.Right)) _swapDirection.X = 1;
-
-                    if (Math.Abs(_swapDirection.X) > 0 && Math.Abs(_swapDirection.Y) > 0) 
-                        _swapDirection = Point.Zero;
-
-                    CurGemToSwap = GetInGrid(_mapCursor + _swapDirection);
-                    if (CurGemToSwap != null)
-                    {
-                        if (CurGemToSwap != CurGemOver)
-                        {
-                            // Autorise le swap seulement si il y a un match possible après !
-                            if (WillCreateMatch(CurGemOver.MapPosition, CurGemToSwap.MapPosition))
-                            {
-                                SwapGem(CurGemOver, CurGemToSwap);
-                                ChangeState((int)States.SwapGems);
-                            }
-                        }
-                    }
+                    SelectGemToSwap();
 
                     break;
 
                 case States.SwapGems:
 
-                    _cursorPos = CurGemOver.XY + _offSetGem;
-
-                    if (CurGemOver.GetState() == (int)Gem.States.None &&
-                        CurGemToSwap.GetState() == (int)Gem.States.None)
-                    {
-
-                        if (HasMatch3())
-                        {
-                            ChangeState((int)States.ExploseGems);
-                            //Game1._soundClick.Play(.5f * Game1.VolumeMaster, .05f, 0f);
-                        }
-                        else
-                        {
-                            // reSwap si pas de match 3
-                            SwapGem(CurGemOver, CurGemToSwap);
-                            ChangeState((int)States.Play);
-                        }
-                    }
-
+                    SwapGems();
 
                     break;
 
                 case States.ExploseGems:
 
-                    ExploseGems();
+                    int nbExplosed = ExploseGems();
+                    _barCombo.AddValue(nbExplosed * 1);
+
                     ChangeState((int)States.PushGemsToDown);
 
                     break;
@@ -720,10 +734,23 @@ namespace PuzzleDefense
 
         public override Node Update(GameTime gameTime)
         {
+            
             _timers.Update();
             HandleInput();
 
             RunState(gameTime);
+
+            if (_isCombo)
+            {
+                _barCombo.SetValue(_barCombo.Value - .1f);
+
+                if (_barCombo.Value <= 0)
+                {
+                    _isCombo = false;
+                }
+
+                _multiplier = (int)(_barCombo.Value/ 10) + 1;
+            }
 
             UpdateChilds(gameTime);
 
@@ -766,10 +793,15 @@ namespace PuzzleDefense
                 batch.Draw(Game1._texCursorA, new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint() + new Point(4, 4), (Game1._texCursorA.Bounds.Size.ToVector2() / 2).ToPoint()), Color.Black * .5f);
                 batch.Draw(Game1._texCursorA, new Rectangle((AbsXY + _cursorPos - Vector2.One * 5).ToPoint(), (Game1._texCursorA.Bounds.Size.ToVector2() / 2).ToPoint()), Color.White);
 
+                _barCombo.Render(batch, AbsRectF.TopCenter - Vector2.UnitY * 8);
+
+                if (_barCombo.Value > 0)
+                batch.CenterBorderedStringXY(Game1._fontMedium, $"x{_multiplier}", _barCombo.ValueXY(), Color.Yellow, Color.Black);
+
             }
             if (indexLayer == (int)Game1.Layers.Debug) 
             {
-                batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_score}", AbsRectF.TopCenter, Color.Yellow);
+                batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_score}", AbsRectF.TopCenter - Vector2.UnitY * 28, Color.Yellow);
                 batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {_mapCursor}", AbsRectF.BottomCenter, Color.White);
 
                 //if (CurGemOver != null)
