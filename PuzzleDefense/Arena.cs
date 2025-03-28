@@ -67,8 +67,6 @@ namespace PuzzleDefense
             }
         }
 
-
-
         private GamePadState _pad;
         private KeyboardState _key;
 
@@ -88,8 +86,8 @@ namespace PuzzleDefense
 
         // Points
         private int _score = 0;
+        EasingValue _easeScore;
         ProgressBar _barCombo;
-        //bool _isCombo = false;
         int _multiplier = 0;
 
         Addon.Loop _loop;
@@ -111,6 +109,8 @@ namespace PuzzleDefense
 
             _timers.Set(Timers.Help, Timer.Time(0, 0, 5), true);
             _timers.Start(Timers.Help);
+
+            _easeScore = new EasingValue(0);
 
             var nbMultiplier = 4;
             _barCombo = new ProgressBar(0, nbMultiplier * 10, 240, 12, Color.GreenYellow, Color.Red, Color.Black, 2f, nbMultiplier, Position.CENTER);
@@ -420,11 +420,15 @@ namespace PuzzleDefense
             foreach (var gem in gems)
             {
                 gem.NbSameColor = gems.Count;
-                _score += _multiplier;
 
                 gem.ExploseMe();
                 DeleteInGrid(gem);
             }
+
+            var amount = _multiplier * gems.Count;
+            _score += amount;
+            _easeScore.SetValue(_score + amount);
+
             return gems.Count;
         }
         public void PushGemsToDown()
@@ -767,17 +771,9 @@ namespace PuzzleDefense
 
             RunState(gameTime);
 
-            //if (_isCombo)
-            {
-                _barCombo.SetValue(_barCombo.Value - .05f);
-
-                //if (_barCombo.Value <= 0)
-                //{
-                //    _isCombo = false;
-                //}
-
-                _multiplier = (int)(_barCombo.Value/ 10) + 1;
-            }
+            _barCombo.SetValue(_barCombo.Value - .05f);
+            _multiplier = (int)(_barCombo.Value/ 10) + 1;
+            _easeScore.Update(gameTime);
 
             UpdateChilds(gameTime);
 
@@ -836,7 +832,7 @@ namespace PuzzleDefense
             }
             if (indexLayer == (int)Game1.Layers.Debug) 
             {
-                batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_score}", AbsRectF.TopCenter - Vector2.UnitY * 28, Color.Yellow);
+                batch.CenterStringXY(Game1._fontMain, $"{_playerIndex} : {_easeScore.Value}", AbsRectF.TopCenter - Vector2.UnitY * 32, Color.Yellow);
                 batch.CenterStringXY(Game1._fontMain, $"{(States)_state} : {_mapCursor}", AbsRectF.BottomCenter, Color.White);
 
                 //if (CurGemOver != null)
